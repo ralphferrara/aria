@@ -1,0 +1,90 @@
+package storage
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+
+	"cloud.google.com/go/storage"
+	"google.golang.org/api/option"
+)
+
+//||------------------------------------------------------------------------------------------------||
+//|| GCPBackend Struct
+//||------------------------------------------------------------------------------------------------||
+
+type GCPBackend struct {
+	client *storage.Client
+	bucket string
+	config StoreConfig
+}
+
+//||------------------------------------------------------------------------------------------------||
+//|| NewGCPBackend Constructor
+//||------------------------------------------------------------------------------------------------||
+
+func NewGCPBackend(cfg StoreConfig) (*GCPBackend, error) {
+	ctx := context.Background()
+	var client *storage.Client
+	var err error
+
+	if cfg.CredentialsJSON != "" {
+		client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(cfg.CredentialsJSON)))
+	} else {
+		client, err = storage.NewClient(ctx)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GCP Storage client: %w", err)
+	}
+
+	return &GCPBackend{
+		client: client,
+		bucket: cfg.Bucket,
+		config: cfg,
+	}, nil
+}
+
+//||------------------------------------------------------------------------------------------------||
+//|| Put: Upload an object
+//||------------------------------------------------------------------------------------------------||
+
+func (g *GCPBackend) Put(objectName string, data []byte) error {
+	ctx := context.Background()
+	wc := g.client.Bucket(g.bucket).Object(objectName).NewWriter(ctx)
+	_, err := wc.Write(data)
+	if err != nil {
+		_ = wc.Close()
+		return err
+	}
+	return wc.Close()
+}
+
+//||------------------------------------------------------------------------------------------------||
+//|| Get: Download an object
+//||------------------------------------------------------------------------------------------------||
+
+func (g *GCPBackend) Get(objectName string) ([]byte, error) {
+	ctx := context.Background()
+	rc, err := g.client.Bucket(g.bucket).Object(objectName).NewReader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, rc)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+//||------------------------------------------------------------------------------------------------||
+//|| Delete: Delete an object
+//||------------------------------------------------------------------------------------------------||
+
+func (g *GCPBackend) Delete(objectName string) error {
+	ctx := context.Background()
+	return g.client.Bucket(g.bucket).Object(objectName).Delete(ctx)
+}
