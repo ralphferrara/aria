@@ -14,7 +14,7 @@ import (
 //|| MinioBackend Struct
 //||------------------------------------------------------------------------------------------------||
 
-type MinioBackend struct {
+type StorageEngineMinio struct {
 	client *minio.Client
 	config StoreConfig
 }
@@ -23,7 +23,7 @@ type MinioBackend struct {
 //|| NewMinioBackend Constructor
 //||------------------------------------------------------------------------------------------------||
 
-func NewMinioBackend(cfg StoreConfig) (*MinioBackend, error) {
+func NewMinioBackend(cfg StoreConfig) (*StorageEngineMinio, error) {
 	client, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
 		Secure: cfg.UseSSL,
@@ -32,7 +32,7 @@ func NewMinioBackend(cfg StoreConfig) (*MinioBackend, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MinIO client: %w", err)
 	}
-	return &MinioBackend{
+	return &StorageEngineMinio{
 		client: client,
 		config: cfg,
 	}, nil
@@ -42,7 +42,7 @@ func NewMinioBackend(cfg StoreConfig) (*MinioBackend, error) {
 //|| Put: Upload an object
 //||------------------------------------------------------------------------------------------------||
 
-func (m *MinioBackend) Put(objectName string, data []byte) error {
+func (m *StorageEngineMinio) Put(objectName string, data []byte) error {
 	ctx := context.Background()
 	_, err := m.client.PutObject(
 		ctx,
@@ -59,7 +59,7 @@ func (m *MinioBackend) Put(objectName string, data []byte) error {
 //|| Get: Download an object
 //||------------------------------------------------------------------------------------------------||
 
-func (m *MinioBackend) Get(objectName string) ([]byte, error) {
+func (m *StorageEngineMinio) Get(objectName string) ([]byte, error) {
 	ctx := context.Background()
 	obj, err := m.client.GetObject(ctx, m.config.Bucket, objectName, minio.GetObjectOptions{})
 	if err != nil {
@@ -79,7 +79,7 @@ func (m *MinioBackend) Get(objectName string) ([]byte, error) {
 //|| Delete: Delete an object
 //||------------------------------------------------------------------------------------------------||
 
-func (m *MinioBackend) Delete(objectName string) error {
+func (m *StorageEngineMinio) Delete(objectName string) error {
 	ctx := context.Background()
 	return m.client.RemoveObject(ctx, m.config.Bucket, objectName, minio.RemoveObjectOptions{})
 }

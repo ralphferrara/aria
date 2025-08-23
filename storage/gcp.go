@@ -14,7 +14,7 @@ import (
 //|| GCPBackend Struct
 //||------------------------------------------------------------------------------------------------||
 
-type GCPBackend struct {
+type StorageEngineGCP struct {
 	client *storage.Client
 	bucket string
 	config StoreConfig
@@ -24,7 +24,7 @@ type GCPBackend struct {
 //|| NewGCPBackend Constructor
 //||------------------------------------------------------------------------------------------------||
 
-func NewGCPBackend(cfg StoreConfig) (*GCPBackend, error) {
+func NewGCPBackend(cfg StoreConfig) (*StorageEngineGCP, error) {
 	ctx := context.Background()
 	var client *storage.Client
 	var err error
@@ -38,7 +38,7 @@ func NewGCPBackend(cfg StoreConfig) (*GCPBackend, error) {
 		return nil, fmt.Errorf("failed to create GCP Storage client: %w", err)
 	}
 
-	return &GCPBackend{
+	return &StorageEngineGCP{
 		client: client,
 		bucket: cfg.Bucket,
 		config: cfg,
@@ -49,7 +49,7 @@ func NewGCPBackend(cfg StoreConfig) (*GCPBackend, error) {
 //|| Put: Upload an object
 //||------------------------------------------------------------------------------------------------||
 
-func (g *GCPBackend) Put(objectName string, data []byte) error {
+func (g *StorageEngineGCP) Put(objectName string, data []byte) error {
 	ctx := context.Background()
 	wc := g.client.Bucket(g.bucket).Object(objectName).NewWriter(ctx)
 	_, err := wc.Write(data)
@@ -64,7 +64,7 @@ func (g *GCPBackend) Put(objectName string, data []byte) error {
 //|| Get: Download an object
 //||------------------------------------------------------------------------------------------------||
 
-func (g *GCPBackend) Get(objectName string) ([]byte, error) {
+func (g *StorageEngineGCP) Get(objectName string) ([]byte, error) {
 	ctx := context.Background()
 	rc, err := g.client.Bucket(g.bucket).Object(objectName).NewReader(ctx)
 	if err != nil {
@@ -84,7 +84,7 @@ func (g *GCPBackend) Get(objectName string) ([]byte, error) {
 //|| Delete: Delete an object
 //||------------------------------------------------------------------------------------------------||
 
-func (g *GCPBackend) Delete(objectName string) error {
+func (g *StorageEngineGCP) Delete(objectName string) error {
 	ctx := context.Background()
 	return g.client.Bucket(g.bucket).Object(objectName).Delete(ctx)
 }

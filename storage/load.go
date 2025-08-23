@@ -15,6 +15,5 @@ func ConvertFromConfig(cfg config.StorageInstanceConfig) StoreConfig {
 		AccessKey: cfg.AccessKey,
 		SecretKey: cfg.SecretKey,
 		LocalPath: cfg.Dir,
-		// Add mapping for cloud-specific fields as needed
 	}
 }

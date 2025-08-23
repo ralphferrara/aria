@@ -11,11 +11,11 @@ type StoreBackend string
 //||------------------------------------------------------------------------------------------------||
 
 const (
-	BackendS3    StoreBackend = "S3"
-	BackendMinIO StoreBackend = "MINIO"
-	BackendAzure StoreBackend = "AZURE"
-	BackendGCP   StoreBackend = "GCP"
-	BackendLocal StoreBackend = "LOCAL"
+	StorageS3    StoreBackend = "S3"
+	StorageMinIO StoreBackend = "MINIO"
+	StorageAzure StoreBackend = "AZURE"
+	StorageGCP   StoreBackend = "GCP"
+	StorageLocal StoreBackend = "LOCAL"
 )
 
 //||------------------------------------------------------------------------------------------------||

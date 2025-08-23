@@ -48,7 +48,7 @@ func TestStorageBackends(t *testing.T) {
 		{
 			name: "S3",
 			config: StoreConfig{
-				Backend:   BackendS3,
+				Backend:   StorageS3,
 				Bucket:    helpers.GetEnv("STORAGE_BUCKET", ""),
 				Region:    helpers.GetEnv("STORAGE_REGION", ""),
 				AccessKey: helpers.GetEnv("STORAGE_ACCESS_KEY", ""),
@@ -59,7 +59,7 @@ func TestStorageBackends(t *testing.T) {
 		{
 			name: "MinIO",
 			config: StoreConfig{
-				Backend:   BackendMinIO,
+				Backend:   StorageMinIO,
 				Bucket:    helpers.GetEnv("STORAGE_BUCKET", ""),
 				Region:    helpers.GetEnv("STORAGE_REGION", ""),
 				Endpoint:  helpers.GetEnv("STORAGE_ENDPOINT", ""),
@@ -72,7 +72,7 @@ func TestStorageBackends(t *testing.T) {
 		{
 			name: "Azure",
 			config: StoreConfig{
-				Backend:     BackendAzure,
+				Backend:     StorageAzure,
 				Bucket:      helpers.GetEnv("STORAGE_BUCKET", ""),
 				AccountName: helpers.GetEnv("STORAGE_ACCOUNT_NAME", ""),
 				AccountKey:  helpers.GetEnv("STORAGE_ACCOUNT_KEY", ""),
@@ -82,7 +82,7 @@ func TestStorageBackends(t *testing.T) {
 		{
 			name: "GCP",
 			config: StoreConfig{
-				Backend:         BackendGCP,
+				Backend:         StorageGCP,
 				Bucket:          helpers.GetEnv("STORAGE_BUCKET", ""),
 				CredentialsJSON: helpers.GetEnv("STORAGE_CREDENTIALS_JSON", ""),
 			},
@@ -91,7 +91,7 @@ func TestStorageBackends(t *testing.T) {
 		{
 			name: "Local",
 			config: StoreConfig{
-				Backend:   BackendLocal,
+				Backend:   StorageLocal,
 				Bucket:    "dummy",
 				LocalPath: "./test_localdata",
 			},
@@ -167,13 +167,13 @@ func TestStorageBackends(t *testing.T) {
 
 func missingConfig(cfg StoreConfig) bool {
 	switch cfg.Backend {
-	case BackendS3:
+	case StorageS3:
 		return cfg.Bucket == "" || cfg.AccessKey == "" || cfg.SecretKey == "" || cfg.Region == ""
-	case BackendMinIO:
+	case StorageMinIO:
 		return cfg.Bucket == "" || cfg.AccessKey == "" || cfg.SecretKey == "" || cfg.Endpoint == ""
-	case BackendAzure:
+	case StorageAzure:
 		return cfg.Bucket == "" || cfg.AccountName == "" || cfg.AccountKey == ""
-	case BackendGCP:
+	case StorageGCP:
 		return cfg.Bucket == "" || cfg.CredentialsJSON == ""
 	}
 	return false

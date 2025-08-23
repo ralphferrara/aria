@@ -28,7 +28,7 @@ func newReadSeekCloser(b []byte) *readSeekCloser {
 //|| AzureBackend Struct
 //||------------------------------------------------------------------------------------------------||
 
-type AzureBackend struct {
+type StorageEngineAzure struct {
 	containerClient *container.Client
 	config          StoreConfig
 }
@@ -37,7 +37,7 @@ type AzureBackend struct {
 //|| NewAzureBackend Constructor
 //||------------------------------------------------------------------------------------------------||
 
-func NewAzureBackend(cfg StoreConfig) (*AzureBackend, error) {
+func NewAzureBackend(cfg StoreConfig) (*StorageEngineAzure, error) {
 	url := fmt.Sprintf("https://%s.blob.core.windows.net/%s", cfg.AccountName, cfg.Bucket)
 	cred, err := azblob.NewSharedKeyCredential(cfg.AccountName, cfg.AccountKey)
 	if err != nil {
@@ -47,7 +47,7 @@ func NewAzureBackend(cfg StoreConfig) (*AzureBackend, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Azure container client: %w", err)
 	}
-	return &AzureBackend{
+	return &StorageEngineAzure{
 		containerClient: containerClient,
 		config:          cfg,
 	}, nil
@@ -57,7 +57,7 @@ func NewAzureBackend(cfg StoreConfig) (*AzureBackend, error) {
 //|| Put: Upload an object
 //||------------------------------------------------------------------------------------------------||
 
-func (a *AzureBackend) Put(objectName string, data []byte) error {
+func (a *StorageEngineAzure) Put(objectName string, data []byte) error {
 	ctx := context.Background()
 	blobClient := a.containerClient.NewBlockBlobClient(objectName)
 	rsc := newReadSeekCloser(data)
@@ -69,7 +69,7 @@ func (a *AzureBackend) Put(objectName string, data []byte) error {
 //|| Get: Download an object
 //||------------------------------------------------------------------------------------------------||
 
-func (a *AzureBackend) Get(objectName string) ([]byte, error) {
+func (a *StorageEngineAzure) Get(objectName string) ([]byte, error) {
 	ctx := context.Background()
 	blobClient := a.containerClient.NewBlockBlobClient(objectName)
 	resp, err := blobClient.DownloadStream(ctx, nil)
@@ -89,7 +89,7 @@ func (a *AzureBackend) Get(objectName string) ([]byte, error) {
 //|| Delete: Delete an object
 //||------------------------------------------------------------------------------------------------||
 
-func (a *AzureBackend) Delete(objectName string) error {
+func (a *StorageEngineAzure) Delete(objectName string) error {
 	ctx := context.Background()
 	blobClient := a.containerClient.NewBlockBlobClient(objectName)
 	_, err := blobClient.Delete(ctx, nil)

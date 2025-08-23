@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"strings"
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -34,39 +35,57 @@ var DefaultStorage *Storage
 //||------------------------------------------------------------------------------------------------||
 
 func (s *Storage) Init() error {
-	switch s.Config.Backend {
-	case BackendS3:
+	switch strings.ToUpper(string(s.Config.Backend)) {
+	//||------------------------------------------------------------------------------------------------||
+	//|| S3
+	//||------------------------------------------------------------------------------------------------||
+	case strings.ToUpper(string(StorageS3)):
 		s3svc, err := NewS3Backend(s.Config)
 		if err != nil {
 			return fmt.Errorf("S3 backend init failed: %w", err)
 		}
 		s.service = s3svc
 		return nil
-	case BackendMinIO:
+	//||------------------------------------------------------------------------------------------------||
+	//|| Min.io
+	//||------------------------------------------------------------------------------------------------||
+	case strings.ToUpper(string(StorageMinIO)):
 		minioSvc, err := NewMinioBackend(s.Config)
 		if err != nil {
 			return fmt.Errorf("MinIO backend init failed: %w", err)
 		}
 		s.service = minioSvc
 		return nil
-	case BackendAzure:
+	//||------------------------------------------------------------------------------------------------||
+	//|| Azure
+	//||------------------------------------------------------------------------------------------------||
+	case strings.ToUpper(string(StorageAzure)):
 		azureSvc, err := NewAzureBackend(s.Config)
 		if err != nil {
 			return fmt.Errorf("Azure backend init failed: %w", err)
 		}
 		s.service = azureSvc
 		return nil
-	case BackendGCP:
+	//||------------------------------------------------------------------------------------------------||
+	//|| BackendGCP
+	//||------------------------------------------------------------------------------------------------||
+	case strings.ToUpper(string(StorageGCP)):
 		gcpSvc, err := NewGCPBackend(s.Config)
 		if err != nil {
 			return fmt.Errorf("GCP backend init failed: %w", err)
 		}
 		s.service = gcpSvc
 		return nil
-	case BackendLocal:
+	//||------------------------------------------------------------------------------------------------||
+	//|| Local
+	//||------------------------------------------------------------------------------------------------||
+	case strings.ToUpper(string(StorageLocal)):
 		localSvc := NewLocalBackend(s.Config)
 		s.service = localSvc
 		return nil
+	//||------------------------------------------------------------------------------------------------||
+	//|| Fail
+	//||------------------------------------------------------------------------------------------------||
 	default:
 		return fmt.Errorf("unsupported storage backend: %s", s.Config.Backend)
 	}

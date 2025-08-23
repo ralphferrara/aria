@@ -10,7 +10,7 @@ import (
 //|| LocalBackend Struct
 //||------------------------------------------------------------------------------------------------||
 
-type LocalBackend struct {
+type StorageEngineLocal struct {
 	basePath string
 	config   StoreConfig
 }
@@ -19,10 +19,10 @@ type LocalBackend struct {
 //|| NewLocalBackend Constructor
 //||------------------------------------------------------------------------------------------------||
 
-func NewLocalBackend(cfg StoreConfig) *LocalBackend {
+func NewLocalBackend(cfg StoreConfig) *StorageEngineLocal {
 	path := cfg.LocalPath
 	_ = os.MkdirAll(path, 0770)
-	return &LocalBackend{
+	return &StorageEngineLocal{
 		basePath: path,
 		config:   cfg,
 	}
@@ -32,7 +32,7 @@ func NewLocalBackend(cfg StoreConfig) *LocalBackend {
 //|| Put: Write file
 //||------------------------------------------------------------------------------------------------||
 
-func (l *LocalBackend) Put(objectName string, data []byte) error {
+func (l *StorageEngineLocal) Put(objectName string, data []byte) error {
 	fullPath := filepath.Join(l.basePath, objectName)
 	dir := filepath.Dir(fullPath)
 	if err := os.MkdirAll(dir, 0770); err != nil {
@@ -45,7 +45,7 @@ func (l *LocalBackend) Put(objectName string, data []byte) error {
 //|| Get: Read file
 //||------------------------------------------------------------------------------------------------||
 
-func (l *LocalBackend) Get(objectName string) ([]byte, error) {
+func (l *StorageEngineLocal) Get(objectName string) ([]byte, error) {
 	fullPath := filepath.Join(l.basePath, objectName)
 	data, err := ioutil.ReadFile(fullPath)
 	if err != nil {
@@ -58,7 +58,7 @@ func (l *LocalBackend) Get(objectName string) ([]byte, error) {
 //|| Delete: Remove file
 //||------------------------------------------------------------------------------------------------||
 
-func (l *LocalBackend) Delete(objectName string) error {
+func (l *StorageEngineLocal) Delete(objectName string) error {
 	fullPath := filepath.Join(l.basePath, objectName)
 	return os.Remove(fullPath)
 }

@@ -17,7 +17,7 @@ import (
 //|| S3Backend Struct
 //||------------------------------------------------------------------------------------------------||
 
-type S3Backend struct {
+type StorageEngineS3 struct {
 	client *s3.Client
 	config StoreConfig
 }
@@ -26,7 +26,7 @@ type S3Backend struct {
 //|| NewS3Backend Constructor
 //||------------------------------------------------------------------------------------------------||
 
-func NewS3Backend(cfg StoreConfig) (*S3Backend, error) {
+func NewS3Backend(cfg StoreConfig) (*StorageEngineS3, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -47,7 +47,7 @@ func NewS3Backend(cfg StoreConfig) (*S3Backend, error) {
 		return nil, fmt.Errorf("unable to load AWS config: %w", err)
 	}
 	client := s3.NewFromConfig(awsCfg)
-	return &S3Backend{
+	return &StorageEngineS3{
 		client: client,
 		config: cfg,
 	}, nil
@@ -57,7 +57,7 @@ func NewS3Backend(cfg StoreConfig) (*S3Backend, error) {
 //|| Put: Upload an object
 //||------------------------------------------------------------------------------------------------||
 
-func (s *S3Backend) Put(objectName string, data []byte) error {
+func (s *StorageEngineS3) Put(objectName string, data []byte) error {
 	ctx := context.Background()
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(s.config.Bucket),
@@ -71,7 +71,7 @@ func (s *S3Backend) Put(objectName string, data []byte) error {
 //|| Get: Download an object
 //||------------------------------------------------------------------------------------------------||
 
-func (s *S3Backend) Get(objectName string) ([]byte, error) {
+func (s *StorageEngineS3) Get(objectName string) ([]byte, error) {
 	ctx := context.Background()
 	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.config.Bucket),
@@ -88,7 +88,7 @@ func (s *S3Backend) Get(objectName string) ([]byte, error) {
 //|| Delete: Delete an object
 //||------------------------------------------------------------------------------------------------||
 
-func (s *S3Backend) Delete(objectName string) error {
+func (s *StorageEngineS3) Delete(objectName string) error {
 	ctx := context.Background()
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.config.Bucket),
