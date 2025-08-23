@@ -23,11 +23,15 @@ import (
 func buildDSN(cfg config.DBInstanceConfig) string {
 	switch cfg.Driver {
 	case "postgres":
-		return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode)
+		return fmt.Sprintf(
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode,
+		)
 	case "mysql", "mariadb":
-		return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
-			cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
+		return fmt.Sprintf(
+			"%s:%s@tcp(%s:%d)/%s?parseTime=true&charset=utf8mb4&loc=Local",
+			cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database,
+		)
 	}
 	return ""
 }
