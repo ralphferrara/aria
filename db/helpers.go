@@ -6,10 +6,11 @@
 package db
 
 import (
-	"aria/config"
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/ralphferrara/aria/config"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

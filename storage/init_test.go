@@ -9,7 +9,6 @@ package storage
 //||------------------------------------------------------------------------------------------------||
 
 import (
-	"base/helpers"
 	"os"
 	"testing"
 
@@ -49,10 +48,10 @@ func TestStorageBackends(t *testing.T) {
 			name: "S3",
 			config: StoreConfig{
 				Backend:   StorageS3,
-				Bucket:    helpers.GetEnv("STORAGE_BUCKET", ""),
-				Region:    helpers.GetEnv("STORAGE_REGION", ""),
-				AccessKey: helpers.GetEnv("STORAGE_ACCESS_KEY", ""),
-				SecretKey: helpers.GetEnv("STORAGE_SECRET_KEY", ""),
+				Bucket:    GetEnv("STORAGE_BUCKET", ""),
+				Region:    GetEnv("STORAGE_REGION", ""),
+				AccessKey: GetEnv("STORAGE_ACCESS_KEY", ""),
+				SecretKey: GetEnv("STORAGE_SECRET_KEY", ""),
 			},
 			skip: false,
 		},
@@ -60,12 +59,12 @@ func TestStorageBackends(t *testing.T) {
 			name: "MinIO",
 			config: StoreConfig{
 				Backend:   StorageMinIO,
-				Bucket:    helpers.GetEnv("STORAGE_BUCKET", ""),
-				Region:    helpers.GetEnv("STORAGE_REGION", ""),
-				Endpoint:  helpers.GetEnv("STORAGE_ENDPOINT", ""),
-				AccessKey: helpers.GetEnv("STORAGE_ACCESS_KEY", ""),
-				SecretKey: helpers.GetEnv("STORAGE_SECRET_KEY", ""),
-				UseSSL:    helpers.GetEnvBool("STORAGE_USE_SSL", false),
+				Bucket:    GetEnv("STORAGE_BUCKET", ""),
+				Region:    GetEnv("STORAGE_REGION", ""),
+				Endpoint:  GetEnv("STORAGE_ENDPOINT", ""),
+				AccessKey: GetEnv("STORAGE_ACCESS_KEY", ""),
+				SecretKey: GetEnv("STORAGE_SECRET_KEY", ""),
+				UseSSL:    GetEnvBool("STORAGE_USE_SSL", false),
 			},
 			skip: false,
 		},
@@ -73,9 +72,9 @@ func TestStorageBackends(t *testing.T) {
 			name: "Azure",
 			config: StoreConfig{
 				Backend:     StorageAzure,
-				Bucket:      helpers.GetEnv("STORAGE_BUCKET", ""),
-				AccountName: helpers.GetEnv("STORAGE_ACCOUNT_NAME", ""),
-				AccountKey:  helpers.GetEnv("STORAGE_ACCOUNT_KEY", ""),
+				Bucket:      GetEnv("STORAGE_BUCKET", ""),
+				AccountName: GetEnv("STORAGE_ACCOUNT_NAME", ""),
+				AccountKey:  GetEnv("STORAGE_ACCOUNT_KEY", ""),
 			},
 			skip: false,
 		},
@@ -83,8 +82,8 @@ func TestStorageBackends(t *testing.T) {
 			name: "GCP",
 			config: StoreConfig{
 				Backend:         StorageGCP,
-				Bucket:          helpers.GetEnv("STORAGE_BUCKET", ""),
-				CredentialsJSON: helpers.GetEnv("STORAGE_CREDENTIALS_JSON", ""),
+				Bucket:          GetEnv("STORAGE_BUCKET", ""),
+				CredentialsJSON: GetEnv("STORAGE_CREDENTIALS_JSON", ""),
 			},
 			skip: false,
 		},
@@ -177,4 +176,31 @@ func missingConfig(cfg StoreConfig) bool {
 		return cfg.Bucket == "" || cfg.CredentialsJSON == ""
 	}
 	return false
+}
+
+//||------------------------------------------------------------------------------------------------||
+//|| Get Env with Default
+//||------------------------------------------------------------------------------------------------||
+
+func GetEnv(key, def string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		return def
+	}
+	return val
+}
+
+//||------------------------------------------------------------------------------------------------||
+//|| Check if Boolean Env is True
+//||------------------------------------------------------------------------------------------------||
+
+func GetEnvBool(key string, def bool) bool {
+	val := os.Getenv(key)
+	if val == "true" || val == "1" {
+		return true
+	}
+	if val == "false" || val == "0" {
+		return false
+	}
+	return def
 }

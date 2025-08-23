@@ -1,6 +1,6 @@
 package storage
 
-import "aria/config"
+import "github.com/ralphferrara/aria/config"
 
 //||------------------------------------------------------------------------------------------------||
 //|| ConvertFromConfig: Helper to create StoreConfig from config.StorageInstanceConfig

@@ -10,10 +10,10 @@ package app
 //||------------------------------------------------------------------------------------------------||
 
 import (
-	"aria/config"
-	"aria/db"
-	"aria/log"
-	"aria/storage"
+	"github.com/ralphferrara/aria/config"
+	"github.com/ralphferrara/aria/db"
+	"github.com/ralphferrara/aria/log"
+	"github.com/ralphferrara/aria/storage"
 )
 
 //||------------------------------------------------------------------------------------------------||
