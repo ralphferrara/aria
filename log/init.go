@@ -41,9 +41,6 @@ func Init(cfg *config.Config) {
 //||------------------------------------------------------------------------------------------------||
 
 func Print(level Level, module string, msg string, args ...interface{}) {
-	if !shouldLog(level) {
-		return
-	}
 	now := time.Now().Format("2006-01-02 15:04:05")
 	fullMsg := fmt.Sprintf(msg, args...)
 	line := fmt.Sprintf("[%s] [%s] [%s] %s\n", now, level, module, fullMsg)
@@ -62,15 +59,6 @@ func Info(module, msg string, args ...interface{})  { Print(INFO, module, msg, a
 func Warn(module, msg string, args ...interface{})  { Print(WARN, module, msg, args...) }
 func Error(module, msg string, args ...interface{}) { Print(ERROR, module, msg, args...) }
 func Debug(module, msg string, args ...interface{}) { Print(DEBUG, module, msg, args...) }
-
-//||------------------------------------------------------------------------------------------------||
-//|| Log: Level Control Helper
-//||------------------------------------------------------------------------------------------------||
-
-func shouldLog(level Level) bool {
-	// Example: log all for now (expand for config-based filtering)
-	return true
-}
 
 //||------------------------------------------------------------------------------------------------||
 //|| Log: Facade Struct for Log.Info-style calls

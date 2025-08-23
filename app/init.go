@@ -23,9 +23,9 @@ import (
 var (
 	Config   *config.Config
 	Storages = map[string]*storage.Storage{}
-	SQLDB    = map[string]*db.GormWrapper{} // <-- FIXED HERE
+	SQLDB    = map[string]*db.GormWrapper{}
 	MongoDB  = map[string]*db.MongoWrapper{}
-	Log      = log.Print
+	Log      = log.Log
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -38,21 +38,21 @@ func Init(configFile string) error {
 	//||------------------------------------------------------------------------------------------------||
 	cfg, err := config.Init(configFile)
 	if err != nil {
-		log.Error("app", "Failed to load config: %v", err)
+		Log.Error("app", "Failed to load config: %v", err)
 		return err
 	}
-	log.Init(cfg)
-	log.Info("app", "Config loaded from %s", configFile)
+	Log.Init(cfg)
+	Log.Info("app", "Config loaded from %s", configFile)
 	Config = cfg
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Init Storage(s)
 	//||------------------------------------------------------------------------------------------------||
-
 	for name, sCfg := range cfg.Storage {
 		storeCfg := storage.ConvertFromConfig(sCfg)
 		st := &storage.Storage{Config: storeCfg}
 		if err := st.Init(); err != nil {
-			log.Error("app", "Failed to init storage '%s': %v", name, err)
+			Log.Error("app", "Failed to init storage '%s': %v", name, err)
 			return err
 		}
 		Storages[name] = st
@@ -62,13 +62,12 @@ func Init(configFile string) error {
 	//|| Init Databases
 	//||------------------------------------------------------------------------------------------------||
 	if err := db.Init(); err != nil {
-		log.Error("app", "Failed to init databases: %v", err)
+		Log.Error("app", "Failed to init databases: %v", err)
 		return err
 	}
-	// Optionally assign/copy for app-global shortcut
-	SQLDB = db.SQL     // SQLDB["main"], etc.
-	MongoDB = db.Mongo // MongoDB["mongo"], etc.
+	SQLDB = db.SQL
+	MongoDB = db.Mongo
 
-	log.Info("app", "Aria app initialized successfully")
+	Log.Info("app", "Aria app initialized successfully")
 	return nil
 }

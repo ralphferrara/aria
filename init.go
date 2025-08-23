@@ -3,7 +3,7 @@
 //|| init.go
 //||------------------------------------------------------------------------------------------------||
 
-package aria
+package app
 
 //||------------------------------------------------------------------------------------------------||
 //|| Import
@@ -23,9 +23,9 @@ import (
 var (
 	Config   *config.Config
 	Storages = map[string]*storage.Storage{}
-	SQLDB    = map[string]*db.GormWrapper{} // <-- FIXED HERE
+	SQLDB    = map[string]*db.GormWrapper{}
 	MongoDB  = map[string]*db.MongoWrapper{}
-	Log      = log.Log
+	Log      = log.Log // Expose the log facade as app.Log.Info, app.Log.Error, etc.
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -41,7 +41,7 @@ func Init(configFile string) error {
 		Log.Error("app", "Failed to load config: %v", err)
 		return err
 	}
-	Log.Init(cfg)
+	Log.Init(cfg) // sets config in logger
 	Log.Info("app", "Config loaded from %s", configFile)
 	Config = cfg
 
@@ -65,8 +65,8 @@ func Init(configFile string) error {
 		Log.Error("app", "Failed to init databases: %v", err)
 		return err
 	}
-	SQLDB = db.SQL     // SQLDB["main"], etc.
-	MongoDB = db.Mongo // MongoDB["mongo"], etc.
+	SQLDB = db.SQL
+	MongoDB = db.Mongo
 
 	Log.Info("app", "Aria app initialized successfully")
 	return nil
