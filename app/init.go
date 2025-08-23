@@ -25,7 +25,7 @@ var (
 	Storages = map[string]*storage.Storage{}
 	SQLDB    = map[string]*db.GormWrapper{}
 	MongoDB  = map[string]*db.MongoWrapper{}
-	Log      = log.Log
+	Log      = log.Log // Expose the log facade as app.Log.Info, app.Log.Error, etc.
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -41,7 +41,7 @@ func Init(configFile string) error {
 		Log.Error("app", "Failed to load config: %v", err)
 		return err
 	}
-	Log.Init(cfg)
+	Log.Init(cfg) // sets config in logger
 	Log.Info("app", "Config loaded from %s", configFile)
 	Config = cfg
 
