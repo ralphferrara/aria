@@ -10,9 +10,11 @@ package app
 //||------------------------------------------------------------------------------------------------||
 
 import (
+	"github.com/ralphferrara/aria/cache"
 	"github.com/ralphferrara/aria/config"
 	"github.com/ralphferrara/aria/db"
 	"github.com/ralphferrara/aria/log"
+	"github.com/ralphferrara/aria/queue"
 	"github.com/ralphferrara/aria/storage"
 )
 
@@ -21,11 +23,16 @@ import (
 //||------------------------------------------------------------------------------------------------||
 
 var (
-	Config   *config.Config
-	Storages = map[string]*storage.Storage{}
-	SQLDB    = map[string]*db.GormWrapper{}
-	MongoDB  = map[string]*db.MongoWrapper{}
-	Log      = log.Log // Expose the log facade as app.Log.Info, app.Log.Error, etc.
+	Config         *config.Config
+	Storages       = map[string]*storage.Storage{}
+	SQLDB          = map[string]*db.GormWrapper{}
+	MongoDB        = map[string]*db.MongoWrapper{}
+	QueueRabbit    = map[string]*queue.RabbitMQWrapper{}
+	CacheRedis     = map[string]*cache.RedisCacheWrapper{}
+	CacheKeyDB     = map[string]*cache.RedisCacheWrapper{}
+	CacheMemcached = map[string]*cache.MemcachedCacheWrapper{}
+	CacheMemory    = map[string]*cache.MemoryCacheWrapper{}
+	Log            = log.Log
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -41,7 +48,7 @@ func Init(configFile string) error {
 		Log.Error("app", "Failed to load config: %v", err)
 		return err
 	}
-	Log.Init(cfg) // sets config in logger
+	Log.Init(cfg)
 	Log.Info("app", "Config loaded from %s", configFile)
 	Config = cfg
 
@@ -67,6 +74,27 @@ func Init(configFile string) error {
 	}
 	SQLDB = db.SQL
 	MongoDB = db.Mongo
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Init Queues
+	//||------------------------------------------------------------------------------------------------||
+	if err := queue.Init(); err != nil {
+		Log.Error("app", "Failed to init queues: %v", err)
+		return err
+	}
+	QueueRabbit = queue.Rabbit
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Init Caches
+	//||------------------------------------------------------------------------------------------------||
+	if err := cache.Init(); err != nil {
+		Log.Error("app", "Failed to init caches: %v", err)
+		return err
+	}
+	CacheRedis = cache.Redis
+	CacheKeyDB = cache.KeyDB
+	CacheMemcached = cache.Memcached
+	CacheMemory = cache.Memory
 
 	Log.Info("app", "Aria app initialized successfully")
 	return nil

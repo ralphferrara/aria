@@ -34,6 +34,17 @@
 		},
 		"memory": {
 			"backend": "memory"
+		},
+		"session_memcached": {
+			"backend": "memcached",
+			"servers": ["localhost:11212"]
+		},
+		"analytics_keydb": {
+			"backend": "keydb",
+			"host": "localhost",
+			"port": 6379,
+			"password": "",
+			"db": 1
 		}
 	},
 	"storage": {
@@ -54,15 +65,10 @@
 		"main": {
 			"backend": "rabbitmq",
 			"host": "localhost",
-			"port": 5672,
-			"user": "guest",
-			"password": "guest",
+			"port": 32001,
+			"user": "myuser",
+			"password": "mypassword",
 			"vhost": "/"
-		},
-		"notifications": {
-			"backend": "redis",
-			"host": "localhost",
-			"port": 6379
 		}
 	},
 	"auth": {

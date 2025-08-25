@@ -50,11 +50,12 @@ type DBInstanceConfig struct {
 //||------------------------------------------------------------------------------------------------||
 
 type CacheInstanceConfig struct {
-	Backend  string `json:"backend"`
-	Host     string `json:"host,omitempty"`
-	Port     int    `json:"port,omitempty"`
-	Password string `json:"password,omitempty"`
-	DB       int    `json:"db,omitempty"`
+	Backend  string   `json:"backend"`
+	Host     string   `json:"host,omitempty"`
+	Port     int      `json:"port,omitempty"`
+	Password string   `json:"password,omitempty"`
+	DB       int      `json:"db,omitempty"`
+	Servers  []string `json:"servers,omitempty"` // <-- add this
 }
 
 //||------------------------------------------------------------------------------------------------||
