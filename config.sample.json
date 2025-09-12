@@ -5,6 +5,22 @@
 		"debug": true,
 		"port": 8080
 	},
+	"http": {
+		"main": {
+			"backend": "mux",
+			"port": 8080,
+			"cors": true,
+			"middleware": true,
+			"error_handler": true
+		},
+		"admin": {
+			"backend": "mux",
+			"port": 9090,
+			"cors": true,
+			"middleware": false,
+			"error_handler": true
+		}
+	},
 	"db": {
 		"main": {
 			"driver": "postgres",
@@ -83,5 +99,10 @@
 	"template": {
 		"dir": "./templates",
 		"cache": true
-	}
+	},
+      "adapters" :{
+            "stripe": {
+                  "api_key": "sk_test_yourkeyhere",
+                  "webhook_secret": "whsec_yoursecrethere"
+            }
 }

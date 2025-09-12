@@ -16,34 +16,49 @@ import (
 )
 
 //||------------------------------------------------------------------------------------------------||
-//|| Queue: Globals (RabbitMQ)
+//|| Init (build all queues from main config)
 //||------------------------------------------------------------------------------------------------||
 
-var (
-	Rabbit = map[string]*RabbitMQWrapper{}
-)
+func Init(cfg *config.Config) (map[string]*RabbitMQWrapper, error) {
 
-//||------------------------------------------------------------------------------------------------||
-//|| Queue: Init - Connects all queues from config
-//||------------------------------------------------------------------------------------------------||
+	//||------------------------------------------------------------------------------------------------||
+	//|| Output Map
+	//||------------------------------------------------------------------------------------------------||
 
-func Init() error {
-	cfg := config.GetConfig()
-	for name, queueCfg := range cfg.Queue {
-		switch queueCfg.Backend {
-		case "rabbitmq":
-			conn, ch, err := connectRabbit(queueCfg)
+	queues := make(map[string]*RabbitMQWrapper)
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Loop Configured Queues
+	//||------------------------------------------------------------------------------------------------||
+
+	for name, qCfg := range cfg.Queue {
+		switch qCfg.Backend {
+
+		//||------------------------------------------------------------------------------------------------||
+		//|| RabbitMQ
+		//||------------------------------------------------------------------------------------------------||
+		case "rabbitmq", "RABBITMQ":
+			conn, ch, err := connectRabbit(qCfg)
 			if err != nil {
-				return fmt.Errorf("failed to connect to rabbitmq '%s': %w", name, err)
+				return nil, fmt.Errorf("queue '%s' rabbitmq connect failed: %w", name, err)
 			}
-			Rabbit[name] = &RabbitMQWrapper{
+			queues[name] = &RabbitMQWrapper{
 				Name:    name,
 				Conn:    conn,
 				Channel: ch,
 			}
+			fmt.Printf("\n[RBBT] - Initializing queue: %s (backend: %s)", name, "RabbitMQ")
+		//||------------------------------------------------------------------------------------------------||
+		//|| Unsupported
+		//||------------------------------------------------------------------------------------------------||
 		default:
-			return fmt.Errorf("unsupported queue backend: %s", queueCfg.Backend)
+			return nil, fmt.Errorf("unsupported queue backend: %s", qCfg.Backend)
 		}
 	}
-	return nil
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Return Map
+	//||------------------------------------------------------------------------------------------------||
+
+	return queues, nil
 }

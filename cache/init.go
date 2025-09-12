@@ -12,61 +12,99 @@ import (
 )
 
 //||------------------------------------------------------------------------------------------------||
-//|| Cache: Globals (Redis, KeyDB, Memcached, Memory)
+//|| Init (build all caches from main config)
 //||------------------------------------------------------------------------------------------------||
 
-var (
-	Redis     = map[string]*RedisCacheWrapper{}
-	KeyDB     = map[string]*RedisCacheWrapper{}
-	Memcached = map[string]*MemcachedCacheWrapper{}
-	Memory    = map[string]*MemoryCacheWrapper{}
-)
+func Init(cfg *config.Config) (
+	map[string]*RedisCacheWrapper,
+	map[string]*RedisCacheWrapper,
+	map[string]*MemcachedCacheWrapper,
+	map[string]*MemoryCacheWrapper,
+	error,
+) {
 
-//||------------------------------------------------------------------------------------------------||
-//|| Cache: Init - Connects all caches from config
-//||------------------------------------------------------------------------------------------------||
+	//||------------------------------------------------------------------------------------------------||
+	//|| Output Maps
+	//||------------------------------------------------------------------------------------------------||
 
-func Init() error {
-	cfg := config.GetConfig()
-	for name, cacheCfg := range cfg.Cache {
-		switch cacheCfg.Backend {
-		case "redis":
-			client, ctx, err := connectRedis(cacheCfg)
+	redisMap := make(map[string]*RedisCacheWrapper)
+	keydbMap := make(map[string]*RedisCacheWrapper)
+	memcMap := make(map[string]*MemcachedCacheWrapper)
+	memMap := make(map[string]*MemoryCacheWrapper)
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Loop Configured Caches
+	//||------------------------------------------------------------------------------------------------||
+
+	for name, c := range cfg.Cache {
+		switch c.Backend {
+
+		//||------------------------------------------------------------------------------------------------||
+		//|| Redis
+		//||------------------------------------------------------------------------------------------------||
+
+		case "redis", "REDIS":
+			client, ctx, err := connectRedis(c)
 			if err != nil {
-				return fmt.Errorf("failed to connect to redis '%s': %w", name, err)
+				return nil, nil, nil, nil, fmt.Errorf("cache '%s' redis connect failed: %w", name, err)
 			}
-			Redis[name] = &RedisCacheWrapper{
+			redisMap[name] = &RedisCacheWrapper{
 				Name:   name,
 				Client: client,
 				Ctx:    ctx,
 			}
-		case "keydb":
-			client, ctx, err := connectRedis(cacheCfg)
+
+		//||------------------------------------------------------------------------------------------------||
+		//|| KeyDB (redis protocol)
+		//||------------------------------------------------------------------------------------------------||
+
+		case "keydb", "KEYDB":
+			client, ctx, err := connectRedis(c)
 			if err != nil {
-				return fmt.Errorf("failed to connect to keydb '%s': %w", name, err)
+				return nil, nil, nil, nil, fmt.Errorf("cache '%s' keydb connect failed: %w", name, err)
 			}
-			KeyDB[name] = &RedisCacheWrapper{
+			keydbMap[name] = &RedisCacheWrapper{
 				Name:   name,
 				Client: client,
 				Ctx:    ctx,
 			}
-		case "memcached":
-			client, err := connectMemcached(cacheCfg)
+
+		//||------------------------------------------------------------------------------------------------||
+		//|| Memcached
+		//||------------------------------------------------------------------------------------------------||
+
+		case "memcached", "MEMCACHED":
+			client, err := connectMemcached(c)
 			if err != nil {
-				return fmt.Errorf("failed to connect to memcached '%s': %w", name, err)
+				return nil, nil, nil, nil, fmt.Errorf("cache '%s' memcached connect failed: %w", name, err)
 			}
-			Memcached[name] = &MemcachedCacheWrapper{
+			memcMap[name] = &MemcachedCacheWrapper{
 				Name:   name,
 				Client: client,
 			}
-		case "memory":
-			Memory[name] = &MemoryCacheWrapper{
+
+		//||------------------------------------------------------------------------------------------------||
+		//|| In-Memory
+		//||------------------------------------------------------------------------------------------------||
+
+		case "memory", "MEMORY":
+			memMap[name] = &MemoryCacheWrapper{
 				Name:  name,
 				Store: initMemoryStore(),
 			}
+
+		//||------------------------------------------------------------------------------------------------||
+		//|| Unsupported
+		//||------------------------------------------------------------------------------------------------||
+
 		default:
-			return fmt.Errorf("unsupported cache backend: %s", cacheCfg.Backend)
+			return nil, nil, nil, nil, fmt.Errorf("unsupported cache backend: %s", c.Backend)
 		}
 	}
-	return nil
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Return Maps
+	//||------------------------------------------------------------------------------------------------||
+
+	return redisMap, keydbMap, memcMap, memMap, nil
 }

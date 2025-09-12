@@ -3,6 +3,8 @@ package storage
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ralphferrara/aria/config"
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -34,7 +36,31 @@ var DefaultStorage *Storage
 //|| Init (Selects backend implementation)
 //||------------------------------------------------------------------------------------------------||
 
-func (s *Storage) Init() error {
+func Init(cfg *config.Config) (map[string]*Storage, error) {
+	storages := make(map[string]*Storage)
+	for name, sCfg := range cfg.Storage {
+		storeCfg := ConvertFromConfig(sCfg)
+		st := &Storage{Config: storeCfg}
+
+		if err := st.InitStorage(); err != nil {
+			return nil, fmt.Errorf("storage '%s' init failed: %w", name, err)
+		}
+
+		fmt.Printf("\n[STRG] - Initializing storage: %s (backend: %s)", name, storeCfg.Backend)
+		storages[name] = st
+
+		if DefaultStorage == nil {
+			DefaultStorage = st
+		}
+	}
+	return storages, nil
+}
+
+//||------------------------------------------------------------------------------------------------||
+//|| Init (Selects backend implementation)
+//||------------------------------------------------------------------------------------------------||
+
+func (s *Storage) InitStorage() error {
 	switch strings.ToUpper(string(s.Config.Backend)) {
 	//||------------------------------------------------------------------------------------------------||
 	//|| S3

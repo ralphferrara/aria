@@ -15,6 +15,7 @@ type Config struct {
 	Cache    map[string]CacheInstanceConfig   `json:"cache"`
 	Storage  map[string]StorageInstanceConfig `json:"storage"`
 	Queue    map[string]QueueInstanceConfig   `json:"queue"`
+	HTTP     map[string]HTTPInstanceConfig    `json:"http"` // <-- add this
 	Auth     AuthConfig                       `json:"auth"`
 	Locale   LocaleConfig                     `json:"locale"`
 	Template TemplateConfig                   `json:"template"`
@@ -36,13 +37,14 @@ type AppConfig struct {
 //||------------------------------------------------------------------------------------------------||
 
 type DBInstanceConfig struct {
-	Driver   string `json:"driver"`
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	User     string `json:"user"`
-	Password string `json:"password"`
-	Database string `json:"database"`
-	SSLMode  string `json:"sslmode,omitempty"`
+	Driver   string `json:"driver"` // postgres | mysql | mariadb | mongo
+	Host     string `json:"host,omitempty"`
+	Port     int    `json:"port,omitempty"`
+	User     string `json:"user,omitempty"`
+	Password string `json:"password,omitempty"`
+	Database string `json:"database,omitempty"`
+	SSLMode  string `json:"sslmode,omitempty"` // postgres only
+	URI      string `json:"uri,omitempty"`     // optional mongo URI
 }
 
 //||------------------------------------------------------------------------------------------------||
@@ -50,12 +52,12 @@ type DBInstanceConfig struct {
 //||------------------------------------------------------------------------------------------------||
 
 type CacheInstanceConfig struct {
-	Backend  string   `json:"backend"`
+	Backend  string   `json:"backend"` // redis | keydb | memcached | memory
 	Host     string   `json:"host,omitempty"`
 	Port     int      `json:"port,omitempty"`
 	Password string   `json:"password,omitempty"`
 	DB       int      `json:"db,omitempty"`
-	Servers  []string `json:"servers,omitempty"` // <-- add this
+	Servers  []string `json:"servers,omitempty"` // memcached
 }
 
 //||------------------------------------------------------------------------------------------------||
@@ -63,7 +65,7 @@ type CacheInstanceConfig struct {
 //||------------------------------------------------------------------------------------------------||
 
 type StorageInstanceConfig struct {
-	Backend   string `json:"backend"`
+	Backend   string `json:"backend"` // s3 | minio | gcs | local
 	Bucket    string `json:"bucket,omitempty"`
 	Region    string `json:"region,omitempty"`
 	AccessKey string `json:"access_key,omitempty"`
@@ -77,7 +79,7 @@ type StorageInstanceConfig struct {
 //||------------------------------------------------------------------------------------------------||
 
 type QueueInstanceConfig struct {
-	Backend  string `json:"backend"`
+	Backend  string `json:"backend"` // rabbitmq, etc.
 	Host     string `json:"host,omitempty"`
 	Port     int    `json:"port,omitempty"`
 	User     string `json:"user,omitempty"`
@@ -86,13 +88,25 @@ type QueueInstanceConfig struct {
 }
 
 //||------------------------------------------------------------------------------------------------||
+//|| Config: HTTP Section
+//||------------------------------------------------------------------------------------------------||
+
+type HTTPInstanceConfig struct {
+	Backend      string `json:"backend"` // "mux" or "http"
+	Port         int    `json:"port"`
+	Cors         bool   `json:"cors"`
+	Middleware   bool   `json:"middleware"`
+	ErrorHandler bool   `json:"error_handler"`
+}
+
+//||------------------------------------------------------------------------------------------------||
 //|| Config: Auth Section
 //||------------------------------------------------------------------------------------------------||
 
 type AuthConfig struct {
-	JwtSecret     string `json:"jwt_secret"`
-	SessionExpiry int    `json:"session_expiry"`
-	TokenIssuer   string `json:"token_issuer"`
+	Database string `json:"database"`
+	CSRF     string `json:"csrf"`
+	Pepper   string `json:"pepper"`
 }
 
 //||------------------------------------------------------------------------------------------------||
@@ -102,6 +116,7 @@ type AuthConfig struct {
 type LocaleConfig struct {
 	Default   string   `json:"default"`
 	Supported []string `json:"supported"`
+	Directory string   `json:"directory"`
 }
 
 //||------------------------------------------------------------------------------------------------||

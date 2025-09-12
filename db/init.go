@@ -22,22 +22,17 @@ import (
 )
 
 //||------------------------------------------------------------------------------------------------||
-//|| DB: Globals (SQL & Mongo)
-//||------------------------------------------------------------------------------------------------||
-
-var (
-	SQL   = map[string]*GormWrapper{}
-	Mongo = map[string]*MongoWrapper{}
-)
-
-//||------------------------------------------------------------------------------------------------||
 //|| DB: Init - Connects all DBs from config
 //||------------------------------------------------------------------------------------------------||
 
-func Init() error {
-	cfg := config.GetConfig()
+func Init(cfg *config.Config) (map[string]*GormWrapper, map[string]*MongoWrapper, error) {
+
+	sqlDB := make(map[string]*GormWrapper)
+	mongoDB := make(map[string]*MongoWrapper)
+
 	for name, dbCfg := range cfg.DB {
 		switch dbCfg.Driver {
+
 		//||------------------------------------------------------------------------------------------------||
 		//|| PostGres
 		//||------------------------------------------------------------------------------------------------||
@@ -45,9 +40,10 @@ func Init() error {
 			dsn := buildDSN(dbCfg)
 			db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 			if err != nil {
-				return fmt.Errorf("failed to connect to postgres '%s': %w", name, err)
+				return nil, nil, fmt.Errorf("failed to connect to postgres '%s': %w", name, err)
 			}
-			SQL[name] = &GormWrapper{Name: name, DB: db}
+			sqlDB[name] = &GormWrapper{Name: name, DB: db}
+			fmt.Printf("\n[ DB ] - Initialized database: %s (backend: %s)", name, dbCfg.Driver)
 
 		//||------------------------------------------------------------------------------------------------||
 		//|| MySQL, MariaDB
@@ -56,27 +52,28 @@ func Init() error {
 			dsn := buildDSN(dbCfg)
 			db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 			if err != nil {
-				return fmt.Errorf("failed to connect to mysql/mariadb '%s': %w", name, err)
+				return nil, nil, fmt.Errorf("failed to connect to mysql/mariadb '%s': %w", name, err)
 			}
-			SQL[name] = &GormWrapper{Name: name, DB: db}
-
+			sqlDB[name] = &GormWrapper{Name: name, DB: db}
+			fmt.Printf("\n[ DB ] - Initialized database: %s (backend: %s)", name, dbCfg.Driver)
 		//||------------------------------------------------------------------------------------------------||
 		//|| MongoDB
 		//||------------------------------------------------------------------------------------------------||
 		case "mongo":
-			mCfg := config.GetConfig().DB[name]
-			mdb, err := connectMongo(mCfg)
+			mdb, err := connectMongo(dbCfg)
 			if err != nil {
-				return fmt.Errorf("mongo connect failed for '%s': %w", name, err)
+				return nil, nil, fmt.Errorf("mongo connect failed for '%s': %w", name, err)
 			}
-			Mongo[name] = &MongoWrapper{Name: name, Database: mdb}
+			mongoDB[name] = &MongoWrapper{Name: name, Database: mdb}
+			fmt.Printf("\n[ DB ] - Initialized database: %s (backend: %s)", name, dbCfg.Driver)
 
 		//||------------------------------------------------------------------------------------------------||
 		//|| Default
 		//||------------------------------------------------------------------------------------------------||
 		default:
-			return fmt.Errorf("unsupported db driver: %s", dbCfg.Driver)
+			return nil, nil, fmt.Errorf("unsupported db driver: %s", dbCfg.Driver)
 		}
 	}
-	return nil
+
+	return sqlDB, mongoDB, nil
 }

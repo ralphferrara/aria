@@ -10,21 +10,28 @@ import (
 
 func TestDBInit(t *testing.T) {
 	// Locate test config (adjust if needed)
-	cwd, _ := os.Getwd()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd failed: %v", err)
+	}
 	configPath := filepath.Join(cwd, "..", "testdata", "config.json")
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		t.Skipf("Test config file not found: %s", configPath)
 	}
 
-	_, err := config.Init(configPath)
+	cfg, err := config.Init(configPath)
 	if err != nil {
 		t.Fatalf("config.Init failed: %v", err)
 	}
 
-	if err := Init(); err != nil {
+	sqlMap, mongoMap, err := Init(cfg)
+	if err != nil {
 		t.Fatalf("db.Init failed: %v", err)
 	}
+
+	SQL = sqlMap
+	Mongo = mongoMap
 
 	if len(SQL) == 0 && len(Mongo) == 0 {
 		t.Error("No DB connections were initialized (SQL and Mongo maps are empty)")
