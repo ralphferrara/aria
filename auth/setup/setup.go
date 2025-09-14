@@ -3,6 +3,7 @@ package setup
 import (
 	"net/http"
 
+	"github.com/ralphferrara/aria/auth/types"
 	"gorm.io/gorm"
 )
 
@@ -31,6 +32,7 @@ type AuthSetup struct {
 
 type AuthFunctions struct {
 	OnAccountCreation     func(r *http.Request, accountID int64) error
+	OnAuthCheck           func(w http.ResponseWriter, r *http.Request, authMe types.AuthMeRecord) error
 	OnBeforeAccountDelete func(accountID int64) error
 	OnAfterAccountDelete  func(accountID int64) error
 }

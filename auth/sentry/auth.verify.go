@@ -39,44 +39,56 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 	token := r.FormValue("token")
 	code := r.FormValue("code")
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Var
 	//||------------------------------------------------------------------------------------------------||
+
 	fmt.Println("[TwoFactor] Incoming -> token:", token, " code:", code)
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Basic Validation
 	//||------------------------------------------------------------------------------------------------||
+
 	if token == "" || code == "" {
 		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("TF_MISSING_CODE"))
 		return
 	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Get Record from Redis
 	//||------------------------------------------------------------------------------------------------||
+
 	val, err := app.CacheRedis["auth"].Get(actions.TwoFactorCacheCode(token))
 	if err != nil {
 		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("TF_INVALID_TOKEN"))
 		return
 	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Convert to struct
 	//||------------------------------------------------------------------------------------------------||
+
 	var record types.TwoFactorVerification
 	if err := json.Unmarshal([]byte(val), &record); err != nil {
 		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("TF_INVALID_RECORD"))
 		return
 	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Get Record from Redis
 	//||------------------------------------------------------------------------------------------------||
+
 	if record.Attempts >= 5 {
 		app.CacheRedis["auth"].Del(fmt.Sprintf("verify:%s", token))
 		responses.Error(w, http.StatusTooManyRequests, app.Err("Auth").Code("TF_TOO_MANY_ATTEMPTS"))
 		return
 	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Get Record from Redis
 	//||------------------------------------------------------------------------------------------------||
+
 	if code != record.Code {
 		record.Attempts++
 		newData, _ := json.Marshal(record)
@@ -84,25 +96,32 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 		responses.Error(w, http.StatusUnauthorized, app.Err("Auth").Code("TF_CODE_MISMATCH"))
 		return
 	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Check if the token is expired
 	//||------------------------------------------------------------------------------------------------||
+
 	if time.Now().After(record.Expires) {
 		app.CacheRedis["auth"].Del(fmt.Sprintf("verify:%s", token))
 		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("TF_TOKEN_EXPIRED"))
 		return
 	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Success! Delete
 	//||------------------------------------------------------------------------------------------------||
+
 	app.CacheRedis["auth"].Del(fmt.Sprintf("verify:%s", token))
+	fmt.Println("Successfully validated Record:", record.Type)
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Get the Hashed Email
 	//||------------------------------------------------------------------------------------------------||
+
 	hashedIdentifier := actions.GenerateIdentifierHash(record.Identifier)
 
 	//||------------------------------------------------------------------------------------------------||
-	//|| Handle Password Reset Verification
+	//|| PASSWORD RESET VERIFICATION
 	//||------------------------------------------------------------------------------------------------||
 
 	if record.Type == app.Constants("TwoFactorType").Code("Reset") {
@@ -139,11 +158,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Account Creation - NOT RESET
 	//||------------------------------------------------------------------------------------------------||
 
-	account, aErr := db.GetAccountByIdentifier(hashedIdentifier)
-	if aErr != nil {
-		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("ACCOUNT_LOOKUP_FAILED"))
-		return
-	}
+	account, _ := db.GetAccountByIdentifier(hashedIdentifier)
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Create the Account
@@ -169,8 +184,8 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 		created.Salt = random.RandomString(32)
 		created.Status = app.Constants("AccountStatus").Code("Pending")
 		created.Level = 1
-		account, aErr = db.CreateAccount(&created)
-		if aErr != nil || account == nil {
+		account, uErr = db.CreateAccount(&created)
+		if uErr != nil || account == nil {
 			responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("ACCOUNT_CREATE_FAILED"))
 			return
 		}

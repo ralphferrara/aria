@@ -128,7 +128,7 @@ func Init(configFile string) {
 
 	qMap, err := queue.Init(cfg)
 	if err != nil {
-		Log.Error("app", "Failed to init queue(s): %v", err)
+		Log.Error("\nFailed to init queue(s): %v", err)
 		os.Exit(1)
 	}
 	QueueRabbit = qMap
