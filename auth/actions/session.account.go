@@ -5,12 +5,11 @@ package actions
 //||------------------------------------------------------------------------------------------------||
 
 import (
-	"base/db/abstract"
-	"base/db/models"
-	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/ralphferrara/aria/app"
+	"github.com/ralphferrara/aria/auth/db"
 	"github.com/ralphferrara/aria/auth/types"
 )
 
@@ -18,7 +17,7 @@ import (
 //|| Load Session Account
 //||------------------------------------------------------------------------------------------------||
 
-func LoadSessionAccount(r *http.Request) (http.Cookie, models.Account, types.SessionRecord, error) {
+func LoadSessionAccount(r *http.Request) (http.Cookie, db.ModelAccount, types.SessionRecord, error) {
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Get the Session Cookie
@@ -26,7 +25,7 @@ func LoadSessionAccount(r *http.Request) (http.Cookie, models.Account, types.Ses
 
 	cookie, err := r.Cookie("session")
 	if err != nil || cookie.Value == "" {
-		return http.Cookie{}, models.Account{}, types.SessionRecord{}, errors.New("missing session cookie")
+		return http.Cookie{}, db.ModelAccount{}, types.SessionRecord{}, app.Err("Auth").Error("MISSING_SESSION_COOKIE")
 	}
 
 	//||------------------------------------------------------------------------------------------------||
@@ -35,16 +34,16 @@ func LoadSessionAccount(r *http.Request) (http.Cookie, models.Account, types.Ses
 
 	session, err := FetchSession(cookie.Value)
 	if err != nil {
-		return *cookie, models.Account{}, types.SessionRecord{}, errors.New("could not retrieve session")
+		return *cookie, db.ModelAccount{}, types.SessionRecord{}, app.Err("Auth").Error("SESSION_LOOKUP_FAILED")
 	}
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Get Database Account
 	//||------------------------------------------------------------------------------------------------||
 
-	account, err := abstract.GetAccountByID(fmt.Sprintf("%d", session.ID))
+	account, err := db.GetAccountByID(fmt.Sprintf("%d", session.ID))
 	if err != nil || account == nil {
-		return *cookie, models.Account{}, types.SessionRecord{}, errors.New("could not retrieve account")
+		return *cookie, db.ModelAccount{}, types.SessionRecord{}, app.Err("Auth").Error("ACCOUNT_LOOKUP_FAILED")
 	}
 
 	//||------------------------------------------------------------------------------------------------||

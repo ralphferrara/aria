@@ -192,7 +192,7 @@ func stringInSlice(
 	list []string,
 ) bool {
 	for _, item := range list {
-		if strings.ToUpper(item) == strings.ToUpper(target) {
+		if strings.EqualFold(item, target) {
 			return true
 		}
 	}

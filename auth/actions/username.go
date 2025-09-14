@@ -5,14 +5,9 @@
 package actions
 
 import (
-	"errors"
-	"fmt"
-
-	"base/db/models"
-
-	"github.com/ralphferrara/aria/base/random"
-
 	"github.com/ralphferrara/aria/app"
+	"github.com/ralphferrara/aria/auth/db"
+	"github.com/ralphferrara/aria/base/random"
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -25,29 +20,13 @@ func GenerateUsername() (string, error) {
 		//|| Generate Random Username
 		//||------------------------------------------------------------------------------------------------||
 		username := random.RandomString(12)
-		//||------------------------------------------------------------------------------------------------||
-		//|| Check DB
-		//||------------------------------------------------------------------------------------------------||
-		var count int64
-		err := app.SQLDB["main"].DB.
-			Model(&models.Account{}).
-			Where("account_username = ?", username).
-			Count(&count).Error
-		//||------------------------------------------------------------------------------------------------||
-		//|| Failed
-		//||------------------------------------------------------------------------------------------------||
-		if err != nil {
-			return "", fmt.Errorf("error checking username existence: %w", err)
-		}
-		//||------------------------------------------------------------------------------------------------||
-		//|| Too many attempts
-		//||------------------------------------------------------------------------------------------------||
-		if count == 0 {
+		exists := db.CheckUsernameExists(username)
+		if exists == false {
 			return username, nil
 		}
 	}
 	//||------------------------------------------------------------------------------------------------||
 	//|| Success
 	//||------------------------------------------------------------------------------------------------||
-	return "", errors.New("failed to generate unique username after 5 attempts")
+	return "", app.Err("Auth").Error("USERNAME_GEN_FAILED")
 }

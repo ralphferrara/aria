@@ -1,7 +1,5 @@
 package types
 
-import "base/verify"
-
 //||------------------------------------------------------------------------------------------------||
 //|| Session Record
 //||------------------------------------------------------------------------------------------------||
@@ -19,5 +17,4 @@ type SessionRecord struct {
 	Public      string
 	Created     int64
 	Expires     int64
-	Identity    verify.Identity
 }

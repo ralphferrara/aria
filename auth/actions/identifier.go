@@ -9,20 +9,20 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/ralphferrara/aria/auth"
+	"github.com/ralphferrara/aria/auth/setup"
 )
 
 //||------------------------------------------------------------------------------------------------||
 //|| Generate an Email Hash
 //||------------------------------------------------------------------------------------------------||
 
-func GenerateEmailHash(email string) string {
+func GenerateIdentifierHash(identifier string) string {
 	//||------------------------------------------------------------------------------------------------||
 	//|| Get the Pepper
 	//||------------------------------------------------------------------------------------------------||
 
-	if !auth.Setup.Initialized {
-		fmt.Println("[GenerateEmailHash] Auth setup is not initialized")
+	if !setup.Setup.Initialized {
+		fmt.Println("[GenerateIdentifierHash] Auth setup is not initialized")
 		return ""
 	}
 
@@ -30,9 +30,9 @@ func GenerateEmailHash(email string) string {
 	//|| Pepper
 	//||------------------------------------------------------------------------------------------------||
 
-	accountPepper := auth.Setup.Pepper
+	accountPepper := setup.Setup.Pepper
 	if accountPepper == "" {
-		fmt.Println("[GenerateEmailHash] ACCOUNT_PEPPER is not set") // Corrected log message
+		fmt.Println("[GenerateIdentifierHash] ACCOUNT_PEPPER is not set")
 		return ""
 	}
 
@@ -40,11 +40,11 @@ func GenerateEmailHash(email string) string {
 	//|| Create the Hash
 	//||------------------------------------------------------------------------------------------------||
 
-	emailHash := sha256.Sum256([]byte(accountPepper + email))
+	idHash := sha256.Sum256([]byte(accountPepper + identifier))
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Return
 	//||------------------------------------------------------------------------------------------------||
 
-	return base64.StdEncoding.EncodeToString(emailHash[:])
+	return base64.StdEncoding.EncodeToString(idHash[:])
 }

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"base/db/abstract"
-
+	"github.com/ralphferrara/aria/app"
 	"github.com/ralphferrara/aria/auth/actions"
+	"github.com/ralphferrara/aria/auth/db"
 	"github.com/ralphferrara/aria/base/validate"
 	"github.com/ralphferrara/aria/responses"
 )
@@ -50,8 +50,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Validate
 	//||------------------------------------------------------------------------------------------------||
 
-	if !validate.IsValidEmail(identifier) {
-		responses.Error(w, http.StatusBadRequest, "Invalid email address")
+	valid := validate.ValidatePhoneOrEmail(identifier)
+	if valid != nil {
+		responses.Error(w, http.StatusBadRequest, valid.Error())
 		return
 	}
 
@@ -59,8 +60,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Validate Password
 	//||------------------------------------------------------------------------------------------------||
 
-	if password == "" {
-		responses.Error(w, http.StatusBadRequest, "Password is required")
+	vp := validate.IsValidPassword(password)
+	if vp != nil {
+		responses.Error(w, http.StatusBadRequest, vp.Error())
 		return
 	}
 
@@ -68,12 +70,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Call the Acccount Return
 	//||------------------------------------------------------------------------------------------------||
 
-	hashedEmail := actions.GenerateEmailHash(identifier)
-	fmt.Println(identifier)
-	fmt.Println("Hashed Account:", hashedEmail)
-	account, err := abstract.GetAccountByEmail(hashedEmail)
+	hashedIdentifier := actions.GenerateIdentifierHash(identifier)
+	account, err := db.GetAccountByIdentifier(hashedIdentifier)
 	if err != nil || account == nil {
-		responses.Error(w, http.StatusUnauthorized, "Invalid email or password1")
+		actions.VerifyPassword("NOT_ACTUALLY_VERIFYING", "THIS IS JUST TO_PREVENT_TIMING_ATTACKS", "AND_DATA_LEAKAGE")
+		responses.Error(w, http.StatusUnauthorized, app.Err("Auth").Code("INVALID_CREDENTIALS"))
 		return
 	}
 
@@ -82,7 +83,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 
 	if !actions.VerifyPassword(account.Salt, password, account.Password) {
-		responses.Error(w, http.StatusUnauthorized, "Invalid email or password2")
+		responses.Error(w, http.StatusUnauthorized, app.Err("Auth").Code("INVALID_CREDENTIALS"))
 		return
 	}
 
@@ -103,6 +104,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Store
 	//||------------------------------------------------------------------------------------------------||
 
-	responses.Error(w, http.StatusUnauthorized, "Error Writing Session Cookie, please try again later")
+	responses.Error(w, http.StatusUnauthorized, app.Err("Auth").Code("SESSION_GEN_FAILED"))
 
 }

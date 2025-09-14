@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/ralphferrara/aria/auth"
+	"github.com/ralphferrara/aria/auth/setup"
 	"github.com/ralphferrara/aria/base/random"
 	"golang.org/x/crypto/argon2"
 )
@@ -22,7 +22,7 @@ func HashPassword(salt, raw string) string {
 	//|| Create Hash
 	//||------------------------------------------------------------------------------------------------||
 	hash := argon2.IDKey(
-		[]byte(auth.Setup.Pepper+raw+auth.Setup.Pepper),
+		[]byte(setup.Setup.Pepper+raw+setup.Setup.Pepper),
 		[]byte(salt),
 		1,       // iterations
 		64*1024, // memory in KB

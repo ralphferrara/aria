@@ -1,30 +1,20 @@
 package auth
 
 import (
-	"github.com/ralphferrara/aria/app"
-	"github.com/ralphferrara/aria/setup/authentication"
-)
-
-//||------------------------------------------------------------------------------------------------||
-//|| Setup
-//||------------------------------------------------------------------------------------------------||
-
-var (
-	Setup = authentication.Setup{
-		Initialized: false,
-		Pepper:      "",
-		CSRF:        "",
-		Database:    "",
-	}
+	"github.com/ralphferrara/aria/auth/setup"
+	"github.com/ralphferrara/aria/config"
+	"gorm.io/gorm"
 )
 
 //||------------------------------------------------------------------------------------------------||
 //|| Init
 //||------------------------------------------------------------------------------------------------||
 
-func Init() {
-	Setup.Initialized = true
-	Setup.CSRF = app.Config.Auth.CSRF
-	Setup.Pepper = app.Config.Auth.Pepper
-	Setup.Database = app.Config.Auth.Database
+func Init(gormDB *gorm.DB, config config.AuthConfig) {
+	setup.Setup.Initialized = true
+	setup.Setup.CSRF = config.CSRF
+	setup.Setup.Pepper = config.Pepper
+	setup.Setup.Database = gormDB
+	setup.Setup.Table = config.Table
+	InitConstants()
 }

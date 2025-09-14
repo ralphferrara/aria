@@ -5,15 +5,15 @@ package sentry
 //||------------------------------------------------------------------------------------------------||
 
 import (
-	"base/db/abstract"
-	"base/db/models"
 	"fmt"
 	"net/http"
 
+	"github.com/ralphferrara/aria/app"
+	"github.com/ralphferrara/aria/base/validate"
 	"github.com/ralphferrara/aria/responses"
 
-	"github.com/ralphferrara/aria/app"
 	"github.com/ralphferrara/aria/auth/actions"
+	"github.com/ralphferrara/aria/auth/db"
 )
 
 // ||------------------------------------------------------------------------------------------------||
@@ -44,7 +44,7 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Get Account
 	//||------------------------------------------------------------------------------------------------||
 
-	account, err := abstract.GetAccountByID(fmt.Sprintf("%d", session.ID))
+	account, err := db.GetAccountByID(fmt.Sprintf("%d", session.ID))
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, "Failed to fetch account")
 		return
@@ -57,20 +57,14 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	confirm := r.FormValue("confirmPassword")
 
-	fmt.Println("Resetting password for account ID:", session.ID)
-	fmt.Println("Password:", password)
-	fmt.Println("Confirm Password:", confirm)
+	error := validate.IsValidPassword(password)
+	if error != nil {
+		responses.Error(w, http.StatusBadRequest, error.Error())
+		return
+	}
 
-	if password == "" || confirm == "" {
-		responses.Error(w, http.StatusBadRequest, "Password fields cannot be empty")
-		return
-	}
-	if len(password) < 8 {
-		responses.Error(w, http.StatusBadRequest, "Password must be at least 8 characters")
-		return
-	}
 	if password != confirm {
-		responses.Error(w, http.StatusBadRequest, "Passwords do not match")
+		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("PASSWORD_MISMATCH"))
 		return
 	}
 
@@ -88,14 +82,9 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Update Account Record
 	//||------------------------------------------------------------------------------------------------||
 
-	err = app.SQLDB["main"].DB.Model(&models.Account{}).
-		Where("id_account = ?", session.ID).
-		Updates(map[string]any{
-			"account_password": passwordHash,
-		}).Error
-
+	err = db.UpdatePassword(account.ID, passwordHash)
 	if err != nil {
-		responses.Error(w, http.StatusInternalServerError, "Failed to update password")
+		responses.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

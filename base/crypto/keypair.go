@@ -13,16 +13,16 @@ import (
 )
 
 //||------------------------------------------------------------------------------------------------||
-//|| GenerateKeyPair: Returns PEM-encoded private and public keys
+//|| GenerateKeyPair: Returns PEM-encoded private and public keys (RSA 4096-bit)
 //||------------------------------------------------------------------------------------------------||
 
 func GenerateKeyPair() (privateKeyPEM string, publicKeyPEM string, err error) {
 
 	//||------------------------------------------------------------------------------------------------||
-	//|| Generate RSA Key (2048-bit)
+	//|| Generate RSA Key (4096-bit)
 	//||------------------------------------------------------------------------------------------------||
 
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate RSA key: %w", err)
 	}

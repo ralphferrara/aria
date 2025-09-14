@@ -5,17 +5,18 @@ package sentry
 //||------------------------------------------------------------------------------------------------||
 
 import (
-	"base/db/models"
-	"base/verify"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/ralphferrara/aria/base/random"
 	"github.com/ralphferrara/aria/responses"
 
 	"github.com/ralphferrara/aria/app"
 	"github.com/ralphferrara/aria/auth/actions"
+	"github.com/ralphferrara/aria/auth/db"
+	"github.com/ralphferrara/aria/auth/setup"
 	"github.com/ralphferrara/aria/auth/types"
 )
 
@@ -46,7 +47,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Basic Validation
 	//||------------------------------------------------------------------------------------------------||
 	if token == "" || code == "" {
-		responses.Error(w, http.StatusBadRequest, "Missing or invalid code/token/type")
+		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("TF_MISSING_CODE"))
 		return
 	}
 	//||------------------------------------------------------------------------------------------------||
@@ -54,7 +55,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 	val, err := app.CacheRedis["auth"].Get(actions.TwoFactorCacheCode(token))
 	if err != nil {
-		responses.Error(w, http.StatusBadRequest, "Invalid or expired token")
+		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("TF_INVALID_TOKEN"))
 		return
 	}
 	//||------------------------------------------------------------------------------------------------||
@@ -62,7 +63,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 	var record types.TwoFactorVerification
 	if err := json.Unmarshal([]byte(val), &record); err != nil {
-		responses.Error(w, http.StatusInternalServerError, "Invalid stored record")
+		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("TF_INVALID_RECORD"))
 		return
 	}
 	//||------------------------------------------------------------------------------------------------||
@@ -70,7 +71,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 	if record.Attempts >= 5 {
 		app.CacheRedis["auth"].Del(fmt.Sprintf("verify:%s", token))
-		responses.Error(w, http.StatusTooManyRequests, "Too many attempts")
+		responses.Error(w, http.StatusTooManyRequests, app.Err("Auth").Code("TF_TOO_MANY_ATTEMPTS"))
 		return
 	}
 	//||------------------------------------------------------------------------------------------------||
@@ -80,7 +81,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 		record.Attempts++
 		newData, _ := json.Marshal(record)
 		app.CacheRedis["auth"].Set(fmt.Sprintf("verify:%s", token), newData, time.Until(record.Expires))
-		responses.Error(w, http.StatusUnauthorized, "Invalid code")
+		responses.Error(w, http.StatusUnauthorized, app.Err("Auth").Code("TF_CODE_MISMATCH"))
 		return
 	}
 	//||------------------------------------------------------------------------------------------------||
@@ -88,7 +89,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 	if time.Now().After(record.Expires) {
 		app.CacheRedis["auth"].Del(fmt.Sprintf("verify:%s", token))
-		responses.Error(w, http.StatusBadRequest, "Token expired")
+		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("TF_TOKEN_EXPIRED"))
 		return
 	}
 	//||------------------------------------------------------------------------------------------------||
@@ -98,59 +99,98 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 	//|| Get the Hashed Email
 	//||------------------------------------------------------------------------------------------------||
-	hashedEmail := actions.GenerateEmailHash(record.Identifier)
+	hashedIdentifier := actions.GenerateIdentifierHash(record.Identifier)
+
 	//||------------------------------------------------------------------------------------------------||
-	//|| Get the Account Record
+	//|| Handle Password Reset Verification
 	//||------------------------------------------------------------------------------------------------||
-	var account models.Account
-	if err := app.SQLDB["main"].DB.Where("account_email = ?", hashedEmail).First(&account).Error; err != nil {
-		fmt.Println("[Session] Account not found for email:", record.Identifier, " creating new account")
-	} else {
-		existsToken, err := actions.SessionCreate(record.Identifier, &account)
+
+	if record.Type == app.Constants("TwoFactorType").Code("Reset") {
+
+		//||------------------------------------------------------------------------------------------------||
+		//|| Lookup the Account
+		//||------------------------------------------------------------------------------------------------||
+
+		account, err := db.GetAccountByIdentifier(hashedIdentifier)
+		if err != nil {
+			responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("ACCOUNT_NOT_FOUND"))
+			return
+		}
+
+		//||------------------------------------------------------------------------------------------------||
+		//|| Create the Session and redirect to reset password
+		//||------------------------------------------------------------------------------------------------||
+
+		existsToken, err := actions.SessionCreate(account.Identifier, account)
 		if err == nil {
 			actions.WriteSessionCookie(w, existsToken)
 			responses.Success(w, http.StatusOK, responseTwoFactor{
-				Message: "Two-factor authentication successful. Redirecting to /members",
-				Next:    "/members/",
+				Message: "OK",
+				Next:    "/reset",
 			})
 			return
 		}
-	}
-	//||------------------------------------------------------------------------------------------------||
-	//|| Identity
-	//||------------------------------------------------------------------------------------------------||
 
-	identity := verify.Identity{}
-	identityJSON, err := json.Marshal(identity)
-	if err != nil {
-		responses.Error(w, http.StatusInternalServerError, "Failed to marshal identity: "+err.Error())
+		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("SESSION_GEN_FAILED"))
 		return
 	}
 
 	//||------------------------------------------------------------------------------------------------||
-	//|| Create the Account Struct
+	//|| Account Creation - NOT RESET
 	//||------------------------------------------------------------------------------------------------||
-	account.Type = record.Type
-	account.Email = hashedEmail
-	account.Status = "VERF"
-	account.Level = 1
-	account.Identity = string(identityJSON)
-	//||------------------------------------------------------------------------------------------------||
-	//|| Create the Account Record
-	//||------------------------------------------------------------------------------------------------||
-	if err := app.SQLDB["main"].DB.Create(&account).Error; err != nil {
-		responses.Error(w, http.StatusInternalServerError, "Failed to create account")
+
+	account, aErr := db.GetAccountByIdentifier(hashedIdentifier)
+	if aErr != nil {
+		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("ACCOUNT_LOOKUP_FAILED"))
 		return
 	}
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Create the Account
+	//||------------------------------------------------------------------------------------------------||
+
+	nextPage := "/complete"
+	if account == nil {
+		nextPage = "/members/"
+		//||------------------------------------------------------------------------------------------------||
+		//|| Create Username
+		//||------------------------------------------------------------------------------------------------||
+		username, uErr := actions.GenerateUsername()
+		if uErr != nil {
+			responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("USERNAME_GEN_FAILED"))
+			return
+		}
+		//||------------------------------------------------------------------------------------------------||
+		//|| Create Account Record
+		//||------------------------------------------------------------------------------------------------||
+		created := db.ModelAccount{}
+		created.Identifier = hashedIdentifier
+		created.Username = username
+		created.Salt = random.RandomString(32)
+		created.Status = app.Constants("AccountStatus").Code("Pending")
+		created.Level = 1
+		account, aErr = db.CreateAccount(&created)
+		if aErr != nil || account == nil {
+			responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("ACCOUNT_CREATE_FAILED"))
+			return
+		}
+		create := setup.Setup.Functions.OnAccountCreation(r, account.ID)
+		if create != nil {
+			responses.Error(w, http.StatusInternalServerError, create.Error())
+			return
+		}
+	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Create the Account Record
 	//||------------------------------------------------------------------------------------------------||
-	newToken, err := actions.SessionCreate(record.Identifier, &account)
+
+	newToken, err := actions.SessionCreate(record.Identifier, account)
 	if err == nil {
 		actions.WriteSessionCookie(w, newToken)
 		responses.Success(w, http.StatusOK, responseTwoFactor{
-			Message: "Account Created",
-			Next:    "/complete",
+			Message: "OK",
+			Next:    nextPage,
 		})
 		return
 	}

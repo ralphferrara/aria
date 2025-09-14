@@ -9,16 +9,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 
-	"github.com/ralphferrara/aria/auth"
+	"github.com/ralphferrara/aria/auth/setup"
 )
 
 //||------------------------------------------------------------------------------------------------||
 //|| GenerateQuitToken – creates an HMAC hash from AccountPrivateHash
 //||------------------------------------------------------------------------------------------------||
 
-func GenerateQuitToken(accountPrivateHash string) string {
-	secret := []byte(auth.Setup.CSRF)
+func GenerateQuitToken(accountPassword string) string {
+	secret := []byte(setup.Setup.CSRF)
 	h := hmac.New(sha256.New, secret)
-	h.Write([]byte(accountPrivateHash))
+	h.Write([]byte(accountPassword))
 	return hex.EncodeToString(h.Sum(nil))
 }

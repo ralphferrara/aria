@@ -1,13 +1,13 @@
 package actions
 
 import (
-	"base/db/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/ralphferrara/aria/app"
+	"github.com/ralphferrara/aria/auth/db"
 	"github.com/ralphferrara/aria/auth/types"
 	"github.com/ralphferrara/aria/base/random"
 )
@@ -16,7 +16,7 @@ import (
 //|| Get the Account Record
 //||------------------------------------------------------------------------------------------------||
 
-func SessionCreate(identifier string, account *models.Account) (string, error) {
+func SessionCreate(identifier string, account *db.ModelAccount) (string, error) {
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Generate a Random Token
@@ -29,18 +29,13 @@ func SessionCreate(identifier string, account *models.Account) (string, error) {
 	//||------------------------------------------------------------------------------------------------||
 
 	session := types.SessionRecord{
-		ID:          account.ID,
-		Identifier:  identifier,
-		Username:    account.Username,
-		Status:      account.Status,
-		Type:        account.Type,
-		Private:     account.Private,
-		PrivateHash: account.PrivateHash,
-		Public:      account.Public,
-		Level:       account.Level,
-		Security:    account.Security,
-		Created:     time.Now().Unix(),
-		Expires:     time.Now().Add(30 * 24 * time.Hour).Unix(),
+		ID:         account.ID,
+		Identifier: identifier,
+		Username:   account.Username,
+		Status:     account.Status,
+		Level:      account.Level,
+		Created:    time.Now().Unix(),
+		Expires:    time.Now().Add(30 * 24 * time.Hour).Unix(),
 	}
 
 	//||------------------------------------------------------------------------------------------------||

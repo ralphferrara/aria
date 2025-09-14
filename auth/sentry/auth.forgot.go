@@ -6,7 +6,6 @@ package sentry
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -23,8 +22,8 @@ import (
 //||------------------------------------------------------------------------------------------------||
 
 type responseForgotPassword struct {
-	Token string `json:"token"`
-	Email string `json:"email"`
+	Token      string `json:"token"`
+	Identifier string `json:"identifier"`
 }
 
 //||------------------------------------------------------------------------------------------------||
@@ -37,14 +36,24 @@ func ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Var
 	//||------------------------------------------------------------------------------------------------||
 
-	email := r.FormValue("email")
+	identifier := r.FormValue("identifier")
+	idType := validate.IsEmailOrPhone(identifier)
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Validate Email
 	//||------------------------------------------------------------------------------------------------||
 
-	if !validate.IsValidEmail(email) {
-		responses.Error(w, http.StatusBadRequest, "Invalid email address")
+	if idType == "email" && !validate.IsValidEmail(identifier) {
+		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("INVALID_EMAIL"))
+		return
+	}
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Validate Phone
+	//||------------------------------------------------------------------------------------------------||
+
+	if idType == "phone" && !validate.IsValidPhone(identifier) {
+		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("INVALID_PHONE"))
 		return
 	}
 
@@ -62,8 +71,8 @@ func ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	record := types.TwoFactorVerification{
 		Code:       keyCode,
 		Key:        keyEncoded,
-		Identifier: email,
-		Type:       "RESET",
+		Identifier: identifier,
+		Type:       app.Constants("TwoFactorType").Code("Reset"),
 		Attempts:   0,
 		Created:    time.Now(),
 		Expires:    time.Now().Add(15 * time.Minute),
@@ -89,14 +98,12 @@ func ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("✅ ForgotPassword :: email=%s key=%s code=%s\n", email, keyEncoded, keyCode)
-
 	//||------------------------------------------------------------------------------------------------||
 	//|| Return Success
 	//||------------------------------------------------------------------------------------------------||
 
 	responses.Success(w, http.StatusOK, responseForgotPassword{
-		Token: keyEncoded,
-		Email: email,
+		Token:      keyEncoded,
+		Identifier: identifier,
 	})
 }

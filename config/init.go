@@ -207,9 +207,9 @@ func expandEnvStrings(c *Config) {
 	}
 
 	// Auth
-	c.Auth.Database = os.ExpandEnv(c.Auth.Database)
 	c.Auth.CSRF = os.ExpandEnv(c.Auth.CSRF)
 	c.Auth.Pepper = os.ExpandEnv(c.Auth.Pepper)
+	c.Auth.Table = os.ExpandEnv(c.Auth.Table)
 
 	// Locale
 	c.Locale.Default = os.ExpandEnv(c.Locale.Default)
