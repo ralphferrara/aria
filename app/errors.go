@@ -116,6 +116,7 @@ func (lib ErrorsLibrary) Get(code string) ErrorsEntry {
 
 func (lib ErrorsLibrary) Code(code string) string {
 	code = formatName(code)
+	fmt.Println("Error:", code)
 	if entry, exists := lib.entries[code]; exists {
 		return fmt.Sprintf("%s.%s", strings.ToUpper(lib.name), entry.Code)
 	}

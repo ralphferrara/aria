@@ -5,6 +5,7 @@ package sentry
 //||------------------------------------------------------------------------------------------------||
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/ralphferrara/aria/responses"
@@ -25,11 +26,14 @@ func AuthMeHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Get the Session Cookie
 	//||------------------------------------------------------------------------------------------------||
 
+	fmt.Println("Checking Session...")
 	_, account, session, err := actions.LoadSessionAccount(r)
 	if err != nil {
+		fmt.Println("Error Loading Session:", err.Error())
 		responses.Error(w, http.StatusUnauthorized, err.Error())
 		return
 	}
+	fmt.Println("Session Loaded:", session.ID, account.ID)
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Check Session

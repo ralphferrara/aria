@@ -100,7 +100,7 @@ func CompleteHandler(w http.ResponseWriter, r *http.Request) {
 	account.Password = passwordHash
 	account.Salt = saltHash
 	account.Level = 1
-	account.Status = dbAccount.Status
+	account.Status = app.Constants("AccountStatus").Code("Active")
 	db.AuthDB().Save(&account)
 
 	//||------------------------------------------------------------------------------------------------||

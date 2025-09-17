@@ -14,6 +14,7 @@ func InitErrors() {
 	app.Err("Auth").Add("ACCOUNT_CREATE_FAILED", "Failed to create account", false)
 	app.Err("Auth").Add("ACCOUNT_NOT_FOUND", "Account Not Found", false)
 	app.Err("Auth").Add("ACCOUNT_TOKEN_MISMATCH", "Token does not match", false)
+	app.Err("Auth").Add("ACCOUNT_ACTIVATE_FAILED", "Could not update account to active status", false)
 
 	app.Err("Auth").Add("USERNAME_GEN_FAILED", "Failed to generate username", false)
 
