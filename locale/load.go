@@ -1,64 +1,89 @@
 package locale
 
-//||------------------------------------------------------------------------------------------------||
-//|| Import
-//||------------------------------------------------------------------------------------------------||
-
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
-//||------------------------------------------------------------------------------------------------||
-//|| Load: Read translated files from /translated
-//||------------------------------------------------------------------------------------------------||
+// ||------------------------------------------------------------------------------------------------||
+// || Translation Store
+// ||------------------------------------------------------------------------------------------------||
+var (
+	translations = make(map[string]map[string]map[string]string) // lang -> section -> key -> value
+	mu           sync.RWMutex
+)
 
-func Load() {
-	files, err := os.ReadDir(filepath.Join(Directory, "translated"))
+// ||------------------------------------------------------------------------------------------------||
+// || LoadRendered: Scan `<dir>/.rendered` and cache translations
+// ||------------------------------------------------------------------------------------------------||
+func LoadRendered(dir string) error {
+	// Always look inside the `.rendered` subdirectory
+	renderedDir := filepath.Join(dir, ".rendered")
+
+	files, err := filepath.Glob(filepath.Join(renderedDir, "*.*"))
 	if err != nil {
-		return
+		return fmt.Errorf("failed to list rendered files: %w", err)
 	}
 
-	for _, f := range files {
-		parts := strings.SplitN(f.Name(), ".", 3)
+	var countJSON = 0
+	var countTXT = 0
+
+	for _, file := range files {
+		base := filepath.Base(file)
+		parts := strings.SplitN(base, ".", 3) // lang.name.ext
 		if len(parts) != 3 {
 			continue
 		}
 
-		lang := parts[0]
-		section := parts[1]
-		ext := parts[2]
-		path := filepath.Join(Directory, "translated", f.Name())
+		lang := strings.ToLower(parts[0])
+		name := strings.ToUpper(parts[1])
+		ext := strings.ToLower(parts[2])
 
-		content, err := os.ReadFile(path)
+		data, err := ioutil.ReadFile(file)
 		if err != nil {
-			continue
+			return fmt.Errorf("failed to read %s: %w", file, err)
+		}
+
+		mu.Lock()
+		if _, ok := translations[lang]; !ok {
+			translations[lang] = make(map[string]map[string]string)
 		}
 
 		switch ext {
-		case "txt":
-			if _, ok := TextBlocks[section]; !ok {
-				TextBlocks[section] = make(map[string]string)
-			}
-			TextBlocks[section][lang] = string(content)
-
 		case "json":
-			var data map[string]string
-			if err := json.Unmarshal(content, &data); err != nil {
-				continue
+			section := name
+			if _, ok := translations[lang][section]; !ok {
+				translations[lang][section] = make(map[string]string)
 			}
 
-			if _, ok := Translations[section]; !ok {
-				Translations[section] = make(map[string]string)
+			var parsed map[string]string
+			if err := json.Unmarshal(data, &parsed); err != nil {
+				mu.Unlock()
+				return fmt.Errorf("failed to parse JSON in %s: %w", file, err)
+			}
+			for k, v := range parsed {
+				key := strings.ToUpper(k)
+				translations[lang][section][key] = v
+				countJSON++
 			}
 
-			for key, val := range data {
-				composite := fmt.Sprintf("%s.%s", lang, key)
-				Translations[section][composite] = val
+		case "txt":
+			section := "BLURB"
+			if _, ok := translations[lang][section]; !ok {
+				translations[lang][section] = make(map[string]string)
 			}
+			translations[lang][section][name] = strings.TrimSpace(string(data))
+			countTXT++
+
+		default:
+			// ignore unsupported ext
 		}
+		mu.Unlock()
 	}
+	fmt.Printf("[locale] loaded %d entries\n", countJSON+countTXT)
+	return nil
 }

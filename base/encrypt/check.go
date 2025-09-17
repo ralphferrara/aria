@@ -6,16 +6,23 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
+	"fmt"
 )
 
 //||------------------------------------------------------------------------------------------------||
-//|| GenerateCheckKEy
+//|| GenerateCheckKey: Generates a hash from a PKCS#8 private key PEM
 //||------------------------------------------------------------------------------------------------||
 
 func GenerateCheckKey(privateKeyPEM string) (string, error) {
 	block, _ := pem.Decode([]byte(privateKeyPEM))
-	if block == nil || block.Type != "RSA PRIVATE KEY" {
-		return "", errors.New("invalid private key PEM format")
+	if block == nil || block.Type != "PRIVATE KEY" {
+		return "", errors.New("invalid private key PEM format (expecting PKCS#8)")
+	}
+
+	// Parse to confirm it’s valid PKCS#8
+	_, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse PKCS#8 private key: %w", err)
 	}
 
 	hash := sha256.Sum256([]byte(privateKeyPEM))

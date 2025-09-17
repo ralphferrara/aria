@@ -11,6 +11,7 @@ import (
 	"github.com/ralphferrara/aria/app"
 	"github.com/ralphferrara/aria/auth/actions"
 	"github.com/ralphferrara/aria/auth/db"
+	"github.com/ralphferrara/aria/auth/setup"
 	"github.com/ralphferrara/aria/base/validate"
 	"github.com/ralphferrara/aria/responses"
 )
@@ -44,7 +45,7 @@ func CompleteHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Check Account Status
 	//||------------------------------------------------------------------------------------------------||
 
-	if dbAccount.Status != app.Constants("AccountStatus").Code("Pending") {
+	if dbAccount.Status != app.Constants("AccountStatus").Code("Verified") {
 		responses.Error(w, http.StatusForbidden, app.Err("Auth").Code("ACCOUNT_ALREADY_CREATED"))
 		return
 	}
@@ -96,10 +97,21 @@ func CompleteHandler(w http.ResponseWriter, r *http.Request) {
 	account.ID = dbAccount.ID
 	account.Identifier = actions.GenerateIdentifierHash(session.Identifier)
 	account.Username = randomUsername
+	account.Password = passwordHash
 	account.Salt = saltHash
 	account.Level = 1
-	account.Status = app.Constants("AccountStatus").Code("Active")
+	account.Status = dbAccount.Status
 	db.AuthDB().Save(&account)
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Run the Complete Func
+	//||------------------------------------------------------------------------------------------------||
+
+	err = setup.Setup.Functions.OnAccountComplete(r, account.ID, session.Identifier)
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Refetch the User Data

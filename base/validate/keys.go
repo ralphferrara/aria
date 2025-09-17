@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -12,34 +13,37 @@ import (
 //||------------------------------------------------------------------------------------------------||
 
 func ValidateKeyPair(privateKeyPEM, publicKeyPEM string) error {
-	// Decode and parse the private key
+	// Private (PKCS#8, "PRIVATE KEY")
 	privBlock, _ := pem.Decode([]byte(privateKeyPEM))
-	if privBlock == nil || privBlock.Type != "RSA PRIVATE KEY" {
-		return errors.New("invalid private key PEM format")
+	if privBlock == nil || privBlock.Type != "PRIVATE KEY" {
+		return errors.New("invalid private key PEM format (expecting PKCS#8 'PRIVATE KEY')")
 	}
-	privateKey, err := x509.ParsePKCS1PrivateKey(privBlock.Bytes)
+	privAny, err := x509.ParsePKCS8PrivateKey(privBlock.Bytes)
 	if err != nil {
-		return errors.New("failed to parse RSA private key: " + err.Error())
+		return fmt.Errorf("failed to parse PKCS#8 private key: %w", err)
 	}
-
-	// Decode and parse the public key
-	pubBlock, _ := pem.Decode([]byte(publicKeyPEM))
-	if pubBlock == nil || pubBlock.Type != "RSA PUBLIC KEY" {
-		return errors.New("invalid public key PEM format")
-	}
-	pubKeyIface, err := x509.ParsePKIXPublicKey(pubBlock.Bytes)
-	if err != nil {
-		return errors.New("failed to parse RSA public key: " + err.Error())
-	}
-	pubKey, ok := pubKeyIface.(*rsa.PublicKey)
+	priv, ok := privAny.(*rsa.PrivateKey)
 	if !ok {
-		return errors.New("provided public key is not an RSA key")
+		return errors.New("private key is not RSA")
 	}
 
-	// Ensure public key matches the private key
-	if pubKey.N.Cmp(privateKey.PublicKey.N) != 0 || pubKey.E != privateKey.PublicKey.E {
+	// Public (PKIX/SPKI, "PUBLIC KEY")
+	pubBlock, _ := pem.Decode([]byte(publicKeyPEM))
+	if pubBlock == nil || pubBlock.Type != "PUBLIC KEY" {
+		return errors.New("invalid public key PEM format (expecting PKIX 'PUBLIC KEY')")
+	}
+	pubAny, err := x509.ParsePKIXPublicKey(pubBlock.Bytes)
+	if err != nil {
+		return fmt.Errorf("failed to parse PKIX public key: %w", err)
+	}
+	pub, ok := pubAny.(*rsa.PublicKey)
+	if !ok {
+		return errors.New("public key is not RSA")
+	}
+
+	// Match modulus & exponent
+	if priv.PublicKey.N.Cmp(pub.N) != 0 || priv.PublicKey.E != pub.E {
 		return errors.New("public key does not match the private key")
 	}
-
 	return nil
 }

@@ -1,27 +1,30 @@
 package locale
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-//||------------------------------------------------------------------------------------------------||
-//|| GetTranslation: Return a translation (json or txt)
-//||------------------------------------------------------------------------------------------------||
+// ||------------------------------------------------------------------------------------------------||
+// || GetTranslation
+// ||------------------------------------------------------------------------------------------------||
 
-func GetTranslation(section, term, lang string) (string, error) {
-	if term == "" {
-		if sectionData, ok := TextBlocks[section]; ok {
-			if val, ok := sectionData[lang]; ok {
+func GetTranslation(section, key, lang string) (string, error) {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	section = strings.ToUpper(section)
+	key = strings.ToUpper(key)
+	lang = strings.ToLower(lang)
+
+	if sec, ok := translations[lang]; ok {
+		if keys, ok := sec[section]; ok {
+			if val, ok := keys[key]; ok {
 				return val, nil
 			}
 		}
-		return "", fmt.Errorf("term is required")
 	}
 
-	if sectionMap, ok := Translations[section]; ok {
-		key := fmt.Sprintf("%s.%s", lang, term)
-		if val, ok := sectionMap[key]; ok {
-			return val, nil
-		}
-	}
-
-	return "", fmt.Errorf("translation not found")
+	placeholder := fmt.Sprintf("--MISSINGTRANSLATION-%s-%s-%s", section, key, lang)
+	return placeholder, fmt.Errorf("missing translation for %s.%s in %s", section, key, lang)
 }

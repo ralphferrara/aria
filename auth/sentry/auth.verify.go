@@ -16,7 +16,6 @@ import (
 	"github.com/ralphferrara/aria/app"
 	"github.com/ralphferrara/aria/auth/actions"
 	"github.com/ralphferrara/aria/auth/db"
-	"github.com/ralphferrara/aria/auth/setup"
 	"github.com/ralphferrara/aria/auth/types"
 )
 
@@ -159,6 +158,8 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 
 	account, _ := db.GetAccountByIdentifier(hashedIdentifier)
+	fmt.Println("Account Lookup:", hashedIdentifier)
+	fmt.Println(account)
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Create the Account
@@ -189,9 +190,12 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 			responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("ACCOUNT_CREATE_FAILED"))
 			return
 		}
-		create := setup.Setup.Functions.OnAccountCreation(r, account.ID)
-		if create != nil {
-			responses.Error(w, http.StatusInternalServerError, create.Error())
+		//||------------------------------------------------------------------------------------------------||
+		//|| Update Status to Verified
+		//||------------------------------------------------------------------------------------------------||
+		err = db.UpdateStatusVerified(uint(account.ID))
+		if err != nil {
+			responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("ACCOUNT_CREATE_FAILED"))
 			return
 		}
 	}

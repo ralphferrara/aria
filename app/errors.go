@@ -70,6 +70,7 @@ func Err(libraryName string) ErrorsLibrary {
 func ErrEntry(code string) ErrorsEntry {
 	parts := strings.Split(code, ".")
 	if len(parts) != 2 {
+		fmt.Println("UNDEFINED ERROR MESSAGE:", code)
 		return ErrorsEntry{
 			Code:    "UNDEFINED_ERROR",
 			Message: "UNDEFINED ERROR MESSAGE",
@@ -82,6 +83,7 @@ func ErrEntry(code string) ErrorsEntry {
 func ErrMessage(code string) string {
 	parts := strings.Split(code, ".")
 	if len(parts) != 2 {
+		fmt.Println("UNDEFINED ERROR MESSAGE:", code)
 		return "UNDEFINED_ERROR"
 	}
 	return Err(parts[0]).Message(parts[1])
@@ -104,6 +106,7 @@ func (lib ErrorsLibrary) Get(code string) ErrorsEntry {
 	if entry, exists := lib.entries[code]; exists {
 		return entry
 	}
+	fmt.Println("UNDEFINED ERROR MESSAGE:", code)
 	return ErrorsEntry{
 		Code:    "UNDEFINED_ERROR",
 		Message: "UNDEFINED ERROR MESSAGE",
@@ -116,6 +119,7 @@ func (lib ErrorsLibrary) Code(code string) string {
 	if entry, exists := lib.entries[code]; exists {
 		return fmt.Sprintf("%s.%s", strings.ToUpper(lib.name), entry.Code)
 	}
+	fmt.Println("UNDEFINED ERROR CODE:", lib.name, code)
 	return "ARIA.UNDEFINED_ERROR"
 }
 
@@ -123,7 +127,9 @@ func (lib ErrorsLibrary) Message(code string) string {
 	code = formatName(code)
 	if entry, exists := lib.entries[code]; exists {
 		return entry.Message
+
 	}
+	fmt.Println("UNDEFINED ERROR MESSAGE:", code)
 	return "UNDEFINED ERROR MESSAGE"
 }
 

@@ -28,3 +28,14 @@ type TemplateInstance struct {
 	Markers  []TemplateMarker
 	Language string
 }
+
+//||------------------------------------------------------------------------------------------------||
+//|| Template Instance
+//||------------------------------------------------------------------------------------------------||
+
+type ParsedTranslation struct {
+	Raw     string
+	Section string
+	Key     string
+	Casing  string
+}

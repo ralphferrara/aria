@@ -13,14 +13,14 @@ import (
 //|| GenerateBIP39Keys: Accepts dynamic number of words
 //||------------------------------------------------------------------------------------------------||
 
-func GenerateBIP39Keys(words []string) (privateKeyPEM string, publicKeyPEM string, err error) {
+//||------------------------------------------------------------------------------------------------||
+//|| GenerateBIP39Keys: Accepts dynamic number of words, returns PKCS#8 private key + PKIX public key
+//||------------------------------------------------------------------------------------------------||
 
+func GenerateBIP39Keys(words []string) (privateKeyPEM string, publicKeyPEM string, err error) {
 	const keySize = 2048
 
-	//||------------------------------------------------------------------------------------------------||
-	//|| Normalize Words
-	//||------------------------------------------------------------------------------------------------||
-
+	// Normalize words
 	var clean []string
 	for _, w := range words {
 		w = strings.ToLower(strings.TrimSpace(w))
@@ -28,49 +28,39 @@ func GenerateBIP39Keys(words []string) (privateKeyPEM string, publicKeyPEM strin
 			clean = append(clean, w)
 		}
 	}
-
 	if len(clean) == 0 {
 		return "", "", errors.New("no valid BIP39 words provided")
 	}
 
-	//||------------------------------------------------------------------------------------------------||
-	//|| Create Seed
-	//||------------------------------------------------------------------------------------------------||
-
+	// Create seed
 	mnemonic := strings.Join(clean, " ")
 	seed := sha256.Sum256([]byte(mnemonic))
 
-	//||------------------------------------------------------------------------------------------------||
-	//|| Generate RSA Keys
-	//||------------------------------------------------------------------------------------------------||
-
+	// Generate RSA key deterministically
 	reader := NewDeterministicReader(seed[:])
 	privKey, err := rsa.GenerateKey(reader, keySize)
 	if err != nil {
 		return "", "", err
 	}
 
-	//||------------------------------------------------------------------------------------------------||
-	//|| Encode Private Key
-	//||------------------------------------------------------------------------------------------------||
-
-	privDER := x509.MarshalPKCS1PrivateKey(privKey)
+	// Encode Private Key (PKCS#8)
+	privDER, err := x509.MarshalPKCS8PrivateKey(privKey)
+	if err != nil {
+		return "", "", err
+	}
 	privBlock := pem.Block{
-		Type:  "RSA PRIVATE KEY",
+		Type:  "PRIVATE KEY", // ✅ PKCS#8
 		Bytes: privDER,
 	}
 	privateKeyPEM = string(pem.EncodeToMemory(&privBlock))
 
-	//||------------------------------------------------------------------------------------------------||
-	//|| Encode Public Key
-	//||------------------------------------------------------------------------------------------------||
-
+	// Encode Public Key (PKIX/SPKI)
 	pubDER, err := x509.MarshalPKIXPublicKey(&privKey.PublicKey)
 	if err != nil {
 		return "", "", err
 	}
 	pubBlock := pem.Block{
-		Type:  "RSA PUBLIC KEY",
+		Type:  "PUBLIC KEY", // ✅ PKIX/SPKI
 		Bytes: pubDER,
 	}
 	publicKeyPEM = string(pem.EncodeToMemory(&pubBlock))

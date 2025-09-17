@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 //||------------------------------------------------------------------------------------------------||
 //|| Session Record
 //||------------------------------------------------------------------------------------------------||
@@ -11,6 +13,6 @@ type AuthMeRecord struct {
 	Status     string
 	Type       string
 	Level      int
-	Created    int64
-	Expires    int64
+	Created    time.Time
+	LastLogin  time.Time
 }

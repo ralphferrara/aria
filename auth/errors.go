@@ -38,6 +38,7 @@ func InitErrors() {
 	app.Err("Auth").Add("INVALID_IDENTIFIER", "Identifier is not a valid phone number or email address", false)
 	app.Err("Auth").Add("INVALID_CREDENTIALS", "Account Not Found", false)
 	app.Err("Auth").Add("INVALID_LEVEL", "Account Not Found", false)
+	app.Err("Auth").Add("INVALID_SESSION", "Session Not Found", false)
 
 	app.Err("Auth").Add("TF_MISSING_CODE", "Invalid Code/Token", false)
 	app.Err("Auth").Add("TF_INVALID_TOKEN", "Invalid or expired token", false)

@@ -12,52 +12,45 @@ import (
 //|| Template Markers
 //||------------------------------------------------------------------------------------------------||
 
-func (t TemplateInstance) Compile() string {
-	//||------------------------------------------------------------------------------------------------||
-	//|| Translations
-	//||------------------------------------------------------------------------------------------------||
-	re := regexp.MustCompile(`\{\{([^}]+)\}\}`)
+func (t *TemplateInstance) Compile() string {
+	// Handle translation markers
+	for _, marker := range ParseTranslations(t.Data) {
+		value, err := locale.GetTranslation(marker.Section, marker.Key, t.Language)
+		if err != nil {
+			fmt.Printf("Missing translation for %s:%s (%s): %v\n",
+				marker.Section, marker.Key, t.Language, err)
+			continue
+		}
+
+		switch strings.ToUpper(marker.Casing) {
+		case "UPPER":
+			value = strings.ToUpper(value)
+		case "LOWER":
+			value = strings.ToLower(value)
+		case "TITLE":
+			value = strings.Title(value)
+		}
+
+		t.Data = strings.ReplaceAll(t.Data, marker.Raw, value)
+	}
+
+	// Handle normal markers (non-translation)
+	re := regexp.MustCompile(`\{\{([^}:]+)\}\}`) // matches {{NAME}} but not {{::...}}
 	matches := re.FindAllStringSubmatch(t.Data, -1)
-	//||------------------------------------------------------------------------------------------------||
-	//|| Loop through matches and replace with translations
-	//||------------------------------------------------------------------------------------------------||
-	for _, match := range matches {
-		if len(match) > 1 {
-			raw := match[1]
-			//||------------------------------------------------------------------------------------------------||
-			//|| Skip if it doesn't contain a dot
-			//||------------------------------------------------------------------------------------------------||
-			if !strings.Contains(raw, ".") {
-				continue
+	for _, m := range matches {
+		if len(m) < 2 {
+			continue
+		}
+		raw := m[0]
+		name := m[1]
+
+		for _, marker := range t.Markers {
+			if marker.Marker == name {
+				t.Data = strings.ReplaceAll(t.Data, raw, marker.Value)
+				break
 			}
-			//||------------------------------------------------------------------------------------------------||
-			//|| Get Parts
-			//||------------------------------------------------------------------------------------------------||
-			parts := strings.SplitN(raw, ".", 2)
-			section := parts[0]
-			key := parts[1]
-			//||------------------------------------------------------------------------------------------------||
-			//|| Get Translation
-			//||------------------------------------------------------------------------------------------------||
-			value, err := locale.GetTranslation(section, key, t.Language)
-			if err != nil {
-				fmt.Printf("Failed to get translation for %s.%s: %v\n", section, key, err)
-				continue
-			}
-			//||------------------------------------------------------------------------------------------------||
-			//|| Data Replace
-			//||------------------------------------------------------------------------------------------------||
-			t.Data = ReplaceMarker(t.Data, raw, value)
 		}
 	}
-	//||------------------------------------------------------------------------------------------------||
-	//|| Template Markers
-	//||------------------------------------------------------------------------------------------------||
-	for _, marker := range t.Markers {
-		t.Data = replaceMarker(t.Data, marker.Marker, marker.Value)
-	}
-	//||------------------------------------------------------------------------------------------------||
-	//|| Return Data
-	//||------------------------------------------------------------------------------------------------||
+
 	return t.Data
 }

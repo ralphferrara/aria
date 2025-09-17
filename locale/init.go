@@ -5,26 +5,26 @@ package locale
 //||------------------------------------------------------------------------------------------------||
 
 var (
-	Directory    = "./locales"
-	Translations = make(map[string]map[string]string)
-	TextBlocks   = make(map[string]map[string]string)
+	Supported = []string{"en", "es", "fr", "de", "it", "pt", "zh"}
+	Directory string
 )
 
 //||------------------------------------------------------------------------------------------------||
-//|| Init: Creates LocaleWrapper and returns helper
+//|| Init: Creates LocaleWrapper and loads translations
 //||------------------------------------------------------------------------------------------------||
 
 func Init(dir string) LocaleWrapper {
 	Directory = dir
-	local := LocaleWrapper{
-		Directory:    dir,
-		Translations: Translations,
-		TextBlocks:   TextBlocks,
+
+	if err := LoadRendered(dir); err != nil {
+		panic("failed to load translations: " + err.Error())
+	}
+
+	return LocaleWrapper{
+		Directory: dir,
 		Get: func(section, term, lang string) (string, error) {
 			return GetTranslation(section, term, lang)
 		},
-		Load: Load,
+		Load: LoadRendered,
 	}
-	local.Load()
-	return local
 }

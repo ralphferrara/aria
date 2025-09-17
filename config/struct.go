@@ -30,6 +30,7 @@ type AppConfig struct {
 	Env   string `json:"env"`
 	Debug bool   `json:"debug"`
 	Port  int    `json:"port"`
+	Salt  string `json:"salt"`
 }
 
 //||------------------------------------------------------------------------------------------------||

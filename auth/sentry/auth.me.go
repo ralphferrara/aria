@@ -12,6 +12,7 @@ import (
 	"github.com/ralphferrara/aria/app"
 	"github.com/ralphferrara/aria/auth/actions"
 	"github.com/ralphferrara/aria/auth/setup"
+	"github.com/ralphferrara/aria/auth/types"
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -67,9 +68,23 @@ func AuthMeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//||------------------------------------------------------------------------------------------------||
+	//|| Create the AuthMe Record
+	//||------------------------------------------------------------------------------------------------||
+
+	authMe := types.AuthMeRecord{
+		ID:         account.ID,
+		Identifier: session.Identifier,
+		Username:   account.Username,
+		Status:     account.Status,
+		Level:      account.Level,
+		Created:    account.CreatedAt,
+		LastLogin:  account.LastLogin,
+	}
+
+	//||------------------------------------------------------------------------------------------------||
 	//|| Success Response
 	//||------------------------------------------------------------------------------------------------||
 
-	setup.Setup.Functions.OnAuthCheck(w, r, account.ID, session.Identifier)
+	setup.Setup.Functions.OnAuthCheck(w, r, authMe)
 
 }
