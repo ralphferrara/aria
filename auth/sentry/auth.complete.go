@@ -35,6 +35,7 @@ func CompleteHandler(w http.ResponseWriter, r *http.Request) {
 	//|| DB Account
 	//||------------------------------------------------------------------------------------------------||
 
+	app.Log.Info("Auth Complete Invoked - Now")
 	cookie, dbAccount, session, err := actions.LoadSessionAccount(r)
 	if err != nil {
 		responses.Error(w, http.StatusUnauthorized, err.Error())
@@ -45,10 +46,11 @@ func CompleteHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Check Account Status
 	//||------------------------------------------------------------------------------------------------||
 
-	if dbAccount.Status != app.Constants("AccountStatus").Code("Verified") {
-		responses.Error(w, http.StatusForbidden, app.Err("Auth").Code("ACCOUNT_ALREADY_CREATED"))
-		return
-	}
+	// app.Log.Info("dbAccount.Status:", dbAccount.Status)
+	// if dbAccount.Status != app.Constants("AccountStatus").Code("Verified") {
+	// 	responses.Error(w, http.StatusForbidden, app.Err("Auth").Code("ACCOUNT_ALREADY_CREATED"))
+	// 	return
+	// }
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Var
@@ -63,6 +65,7 @@ func CompleteHandler(w http.ResponseWriter, r *http.Request) {
 	//||
 	//||------------------------------------------------------------------------------------------------||
 
+	app.Log.Info("Sanitizing and Validating Input")
 	vp := validate.IsValidPassword(password)
 	if vp != nil {
 		responses.Error(w, http.StatusBadRequest, vp.Error())
@@ -73,40 +76,32 @@ func CompleteHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Password/Salt
 	//||------------------------------------------------------------------------------------------------||
 
+	app.Log.Info("Generating Password/Salt")
 	passwordHash, saltHash := actions.GeneratePassword(password)
 	if passwordHash == "" {
 		responses.Error(w, http.StatusBadRequest, app.Err("Auth").Code("PASSWORD_GEN_FAILED"))
 	}
 
 	//||------------------------------------------------------------------------------------------------||
-	//|| Random Usenrame
-	//||------------------------------------------------------------------------------------------------||
-
-	randomUsername, err := actions.GenerateUsername()
-	if err != nil {
-		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("USERNAME_GEN_FAILED"))
-	}
-
-	//||------------------------------------------------------------------------------------------------||
 	//|| Create the Account Record
 	//||------------------------------------------------------------------------------------------------||
 
-	fmt.Println("Creating account for:", session.Identifier)
-	fmt.Println(actions.GenerateIdentifierHash(session.Identifier))
+	app.Log.Info("Creating account for:", session.Identifier)
+	app.Log.Info(actions.GenerateIdentifierHash(session.Identifier))
 	account := db.ModelAccount{}
 	account.ID = dbAccount.ID
 	account.Identifier = actions.GenerateIdentifierHash(session.Identifier)
-	account.Username = randomUsername
 	account.Password = passwordHash
 	account.Salt = saltHash
 	account.Level = 1
-	account.Status = app.Constants("AccountStatus").Code("Active")
-	db.AuthDB().Save(&account)
+	account.Status = app.Constants("AccountStatus").Code("Verified")
+	db.AuthDB().Model(&account).Updates(account)
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Run the Complete Func
 	//||------------------------------------------------------------------------------------------------||
 
+	app.Log.Info("Running OnAccountComplete")
 	err = setup.Setup.Functions.OnAccountComplete(r, account.ID, session.Identifier)
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, err.Error())
@@ -117,6 +112,7 @@ func CompleteHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Refetch the User Data
 	//||------------------------------------------------------------------------------------------------||
 
+	app.Log.Info("Re-fetching the updated account")
 	updatedAccount, err := db.GetAccountByID(fmt.Sprintf("%d", account.ID))
 	if err != nil || updatedAccount == nil {
 		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("ACCOUNT_LOOKUP_FAILED"))
@@ -130,6 +126,16 @@ func CompleteHandler(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := actions.SessionCreate(updatedAccount.Identifier, updatedAccount)
 	if err != nil || sessionToken == "" {
 		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("SESSION_GEN_FAILED"))
+		return
+	}
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Done! Mark the Account as Active
+	//||------------------------------------------------------------------------------------------------||
+
+	err = db.UpdateAccountActive(updatedAccount.ID)
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("ACCOUNT_ACTIVATE_FAILED"))
 		return
 	}
 

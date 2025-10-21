@@ -48,6 +48,7 @@ func Init(cfg *config.Config) (
 			if err != nil {
 				return nil, nil, nil, nil, fmt.Errorf("cache '%s' redis connect failed: %w", name, err)
 			}
+			fmt.Printf("\n[CACH] - Initializing cache: %s (backend: %s)", name, c.Backend)
 			redisMap[name] = &RedisCacheWrapper{
 				Name:   name,
 				Client: client,

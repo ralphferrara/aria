@@ -13,14 +13,11 @@ import (
 )
 
 //||------------------------------------------------------------------------------------------------||
-//|| Decrypts data using RSA public key in PEM format
+//|| Decrypts data using RSA private key in PKCS#8 PEM format
 //||------------------------------------------------------------------------------------------------||
 
 func DecryptWithPrivateKey(ciphertext []byte, privateKeyPEM string) ([]byte, error) {
-	//||------------------------------------------------------------------------------------------------||
-	//|| Split base64 parts
-	//||------------------------------------------------------------------------------------------------||
-
+	// Split base64 parts
 	parts := strings.SplitN(string(ciphertext), ".", 3)
 	if len(parts) != 3 {
 		return nil, errors.New("invalid ciphertext format for hybrid decrypt")
@@ -39,27 +36,28 @@ func DecryptWithPrivateKey(ciphertext []byte, privateKeyPEM string) ([]byte, err
 		return nil, err
 	}
 
-	//||------------------------------------------------------------------------------------------------||
-	//|| Decrypt AES Key with RSA Private Key
-	//||------------------------------------------------------------------------------------------------||
-
+	// Decode PEM (PKCS#8 "PRIVATE KEY")
 	pemBlock, _ := pem.Decode([]byte(privateKeyPEM))
-	if pemBlock == nil || pemBlock.Type != "RSA PRIVATE KEY" {
-		return nil, errors.New("invalid private key PEM format")
+	if pemBlock == nil || pemBlock.Type != "PRIVATE KEY" {
+		return nil, errors.New("invalid private key PEM format (expected PKCS#8)")
 	}
-	privateKey, err := x509.ParsePKCS1PrivateKey(pemBlock.Bytes)
+
+	keyAny, err := x509.ParsePKCS8PrivateKey(pemBlock.Bytes)
 	if err != nil {
 		return nil, err
 	}
+	privateKey, ok := keyAny.(*rsa.PrivateKey)
+	if !ok {
+		return nil, errors.New("not an RSA private key")
+	}
+
+	// Decrypt AES Key
 	aesKey, err := rsa.DecryptPKCS1v15(rand.Reader, privateKey, encryptedAESKey)
 	if err != nil {
 		return nil, err
 	}
 
-	//||------------------------------------------------------------------------------------------------||
-	//|| Decrypt Data with AES-GCM
-	//||------------------------------------------------------------------------------------------------||
-
+	// Decrypt Data with AES-GCM
 	blockAES, err := aes.NewCipher(aesKey)
 	if err != nil {
 		return nil, err

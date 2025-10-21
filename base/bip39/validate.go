@@ -1,13 +1,11 @@
-package crypto
+package bip39
 
 //||------------------------------------------------------------------------------------------------||
 //|| Import
 //||------------------------------------------------------------------------------------------------||
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -15,63 +13,56 @@ import (
 //|| ValidateBIP39: Accepts a JSON array of words and validates each against the official BIP39 list
 //||------------------------------------------------------------------------------------------------||
 
-func ValidateBIP39(wordListJSON string) ([]string, error) {
+func IsValidBIP39Word(word string) bool {
+	for _, w := range DataBIP39() {
+		if w == word {
+			return true
+		}
+	}
+	return false
+}
+
+//||------------------------------------------------------------------------------------------------||
+//|| ValidateBIP39: Validates a BIP39WordList against the official BIP39 list
+//||------------------------------------------------------------------------------------------------||
+
+func ValidateBIP39List(wordList BIP39WordList, expectedCount int) error {
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Empty Check
 	//||------------------------------------------------------------------------------------------------||
 
-	if strings.TrimSpace(wordListJSON) == "" {
-		return nil, errors.New("missing BIP39 word list")
+	if len(wordList) == 0 {
+		return errors.New("MISSING_BIP39_LIST")
 	}
 
 	//||------------------------------------------------------------------------------------------------||
-	//|| Parse JSON Array
+	//|| Normalize, Validate, and Build Result
 	//||------------------------------------------------------------------------------------------------||
 
-	var rawWords []string
-	if err := json.Unmarshal([]byte(wordListJSON), &rawWords); err != nil {
-		return nil, fmt.Errorf("invalid BIP39 word list format: %v", err)
-	}
-
-	//||------------------------------------------------------------------------------------------------||
-	//|| Normalize and Filter
-	//||------------------------------------------------------------------------------------------------||
-
-	var words []string
-	for _, w := range rawWords {
-		w = strings.ToLower(strings.TrimSpace(w))
-		if w != "" {
-			words = append(words, w)
+	validated := make(BIP39WordList)
+	for i := 0; i < len(wordList); i++ {
+		w := strings.ToLower(strings.TrimSpace(wordList[i]))
+		if w == "" {
+			return errors.New("INVALID_BIP39_LIST")
 		}
-	}
-
-	if len(words) == 0 {
-		return nil, errors.New("no valid BIP39 words provided")
-	}
-
-	//||------------------------------------------------------------------------------------------------||
-	//|| Build BIP39 Lookup Map
-	//||------------------------------------------------------------------------------------------------||
-
-	validMap := make(map[string]struct{})
-	for _, w := range DataBIP39() {
-		validMap[w] = struct{}{}
-	}
-
-	//||------------------------------------------------------------------------------------------------||
-	//|| Validate Each Word
-	//||------------------------------------------------------------------------------------------------||
-
-	for _, w := range words {
-		if _, ok := validMap[w]; !ok {
-			return nil, fmt.Errorf("invalid BIP39 word: %s", w)
+		if !IsValidBIP39Word(w) {
+			return errors.New("INVALID_BIP39_WORD")
 		}
+		validated[i] = w
 	}
 
 	//||------------------------------------------------------------------------------------------------||
-	//|| Return Validated Words
+	//|| Validate Count
 	//||------------------------------------------------------------------------------------------------||
 
-	return words, nil
+	if (len(validated) != expectedCount) || (len(validated) != len(wordList)) {
+		return errors.New("BIP39_WORD_COUNT_MISMATCH")
+	}
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Return Validated WordList
+	//||------------------------------------------------------------------------------------------------||
+
+	return nil
 }

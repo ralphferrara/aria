@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ralphferrara/aria/base/random"
+	"github.com/ralphferrara/aria/log"
 	"github.com/ralphferrara/aria/responses"
 
 	"github.com/ralphferrara/aria/app"
@@ -36,6 +37,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 	//|| Var
 	//||------------------------------------------------------------------------------------------------||
+
 	token := r.FormValue("token")
 	code := r.FormValue("code")
 
@@ -43,7 +45,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Var
 	//||------------------------------------------------------------------------------------------------||
 
-	fmt.Println("[TwoFactor] Incoming -> token:", token, " code:", code)
+	app.Log.Data("[TwoFactor] Incoming -> token:", token, " code:", code)
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Basic Validation
@@ -73,6 +75,9 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 		responses.Error(w, http.StatusInternalServerError, app.Err("Auth").Code("TF_INVALID_RECORD"))
 		return
 	}
+
+	app.Log.Data("[TwoFactor] Record:")
+	log.PrettyPrint(record)
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Get Record from Redis
@@ -117,7 +122,9 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Get the Hashed Email
 	//||------------------------------------------------------------------------------------------------||
 
+	fmt.Println("Identifier:", record.Identifier)
 	hashedIdentifier := actions.GenerateIdentifierHash(record.Identifier)
+	fmt.Println("Hashed Identifier:", hashedIdentifier)
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| PASSWORD RESET VERIFICATION
@@ -205,6 +212,7 @@ func TwoFactorHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 
 	newToken, err := actions.SessionCreate(record.Identifier, account)
+	fmt.Println("Session Create:", newToken, err)
 	if err == nil {
 		actions.WriteSessionCookie(w, newToken)
 		responses.Success(w, http.StatusOK, responseTwoFactor{

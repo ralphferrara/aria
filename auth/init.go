@@ -10,8 +10,9 @@ import (
 //|| Init
 //||------------------------------------------------------------------------------------------------||
 
-func Init(gormDB *gorm.DB, config config.AuthConfig) {
+func Init(gormDB *gorm.DB, config config.AuthConfig, domain string) {
 	setup.Setup.Initialized = true
+	setup.Setup.Domain = domain
 	setup.Setup.CSRF = config.CSRF
 	setup.Setup.Pepper = config.Pepper
 	setup.Setup.Database = gormDB

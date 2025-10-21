@@ -10,6 +10,9 @@ import (
 	"encoding/pem"
 	"errors"
 	"io"
+	"strings"
+
+	"github.com/ralphferrara/aria/app"
 )
 
 //||------------------------------------------------------------------------------------------------||
@@ -17,6 +20,14 @@ import (
 //||------------------------------------------------------------------------------------------------||
 
 func EncryptWithPublicKey(data []byte, publicKeyPEM string) ([]byte, error) {
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Blank
+	//||------------------------------------------------------------------------------------------------||
+
+	if (strings.TrimSpace(publicKeyPEM) == "") || (len(data) == 0) {
+		return []byte{}, app.Err("Encrypt").Error("PUBLIC_KEY_EMPTY")
+	}
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Generate AES-256 Key
@@ -46,13 +57,15 @@ func EncryptWithPublicKey(data []byte, publicKeyPEM string) ([]byte, error) {
 	cipherData := aesGCM.Seal(nil, nonce, data, nil)
 
 	//||------------------------------------------------------------------------------------------------||
-	//|| Encrypt AES Key with RSA Public Key
+	//|| Decode PEM (must be PKIX/SPKI "PUBLIC KEY")
 	//||------------------------------------------------------------------------------------------------||
 
 	pemBlock, _ := pem.Decode([]byte(publicKeyPEM))
-	if pemBlock == nil || pemBlock.Type != "RSA PUBLIC KEY" {
-		return nil, errors.New("invalid public key PEM format")
+	if pemBlock == nil || pemBlock.Type != "PUBLIC KEY" {
+		app.Log.Error("Invalid PEM Block:", publicKeyPEM)
+		return nil, errors.New("invalid public key PEM format (expected PKIX PUBLIC KEY)")
 	}
+
 	pub, err := x509.ParsePKIXPublicKey(pemBlock.Bytes)
 	if err != nil {
 		return nil, err
@@ -61,6 +74,11 @@ func EncryptWithPublicKey(data []byte, publicKeyPEM string) ([]byte, error) {
 	if !ok {
 		return nil, errors.New("not an RSA public key")
 	}
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Encrypt AES Key with RSA Public Key
+	//||------------------------------------------------------------------------------------------------||
+
 	encryptedAESKey, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, aesKey)
 	if err != nil {
 		return nil, err

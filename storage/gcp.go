@@ -5,8 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 
 	"cloud.google.com/go/storage"
+	"github.com/ralphferrara/aria/log"
 	"google.golang.org/api/option"
 )
 
@@ -29,11 +32,28 @@ func NewGCPBackend(cfg StoreConfig) (*StorageEngineGCP, error) {
 	var client *storage.Client
 	var err error
 
+	log.PrettyPrint(cfg)
+
 	if cfg.CredentialsJSON != "" {
-		client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(cfg.CredentialsJSON)))
+		fmt.Println("[GCP] - Credentials Path:", cfg.CredentialsJSON)
+		if _, err := os.Stat(cfg.CredentialsJSON); err != nil {
+			fmt.Println("[GCP] - File not found:", err)
+		}
+		if _, statErr := os.Stat(cfg.CredentialsJSON); statErr == nil {
+			absPath, _ := filepath.Abs(cfg.CredentialsJSON)
+			creds, readErr := os.ReadFile(absPath)
+			if readErr != nil {
+				return nil, fmt.Errorf("failed to read GCP credentials file: %w", readErr)
+			}
+			client, err = storage.NewClient(ctx, option.WithCredentialsJSON(creds))
+		} else {
+			// Otherwise, assume it's already the JSON content
+			client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(cfg.CredentialsJSON)))
+		}
 	} else {
 		client, err = storage.NewClient(ctx)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GCP Storage client: %w", err)
 	}

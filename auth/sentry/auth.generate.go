@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ralphferrara/aria/base/crypto"
+	"github.com/ralphferrara/aria/base/encrypt"
 	"github.com/ralphferrara/aria/responses"
 )
 
@@ -53,7 +53,7 @@ func GenerateKeyPairHandler(w http.ResponseWriter, r *http.Request) {
 	//|| Generate Key Pair using helpers.GenerateKeyPair()
 	//||------------------------------------------------------------------------------------------------||
 
-	privateKey, publicKey, err := crypto.GenerateKeyPair()
+	privateKey, publicKey, err := encrypt.GenerateKeyPair()
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, "Failed to generate key pair")
 		return

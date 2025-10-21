@@ -8,12 +8,14 @@ import "github.com/ralphferrara/aria/config"
 
 func ConvertFromConfig(cfg config.StorageInstanceConfig) StoreConfig {
 	return StoreConfig{
-		Backend:   StoreBackend(cfg.Backend),
-		Bucket:    cfg.Bucket,
-		Region:    cfg.Region,
-		Endpoint:  cfg.Endpoint,
-		AccessKey: cfg.AccessKey,
-		SecretKey: cfg.SecretKey,
-		LocalPath: cfg.Dir,
+		Backend:         StoreBackend(cfg.Backend),
+		Bucket:          cfg.Bucket,
+		Region:          cfg.Region,
+		CredentialsJSON: cfg.CredentialsJSON,
+		Project:         cfg.Project,
+		Endpoint:        cfg.Endpoint,
+		AccessKey:       cfg.AccessKey,
+		SecretKey:       cfg.SecretKey,
+		LocalPath:       cfg.Dir,
 	}
 }

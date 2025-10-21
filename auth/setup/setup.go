@@ -19,6 +19,7 @@ var Setup AuthSetup
 
 type AuthSetup struct {
 	Initialized bool
+	Domain      string
 	Pepper      string
 	CSRF        string
 	Database    *gorm.DB

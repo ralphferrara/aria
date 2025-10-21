@@ -5,8 +5,11 @@
 package actions
 
 import (
+	"fmt"
+
 	"github.com/ralphferrara/aria/app"
 	"github.com/ralphferrara/aria/auth/db"
+	"github.com/ralphferrara/aria/base/bip39"
 	"github.com/ralphferrara/aria/base/random"
 )
 
@@ -15,13 +18,17 @@ import (
 //||------------------------------------------------------------------------------------------------||
 
 func GenerateUsername() (string, error) {
-	for i := 0; i < 5; i++ {
+	for range make([]struct{}, 5) {
+		word1 := bip39.RandomBIP39Word()
+		word2 := bip39.RandomBIP39Word()
+		word3 := bip39.RandomBIP39Word()
+		word4 := random.RandomString(3)
 		//||------------------------------------------------------------------------------------------------||
 		//|| Generate Random Username
 		//||------------------------------------------------------------------------------------------------||
-		username := random.RandomString(12)
+		username := fmt.Sprintf("%s_%s_%s_%s", word1, word2, word3, word4)
 		exists := db.CheckUsernameExists(username)
-		if exists == false {
+		if !exists {
 			return username, nil
 		}
 	}

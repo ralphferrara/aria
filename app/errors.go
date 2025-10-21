@@ -150,6 +150,7 @@ func (lib ErrorsLibrary) Error(code string) error {
 	if entry, exists := lib.entries[code]; exists {
 		return fmt.Errorf("%s.%s", strings.ToUpper(lib.name), entry.Code)
 	}
+	fmt.Println("UNDEFINED ERROR CODE:", lib.name, code)
 	return errors.New("UNDEFINED_ERROR")
 }
 

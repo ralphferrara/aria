@@ -66,13 +66,15 @@ type CacheInstanceConfig struct {
 //||------------------------------------------------------------------------------------------------||
 
 type StorageInstanceConfig struct {
-	Backend   string `json:"backend"` // s3 | minio | gcs | local
-	Bucket    string `json:"bucket,omitempty"`
-	Region    string `json:"region,omitempty"`
-	AccessKey string `json:"access_key,omitempty"`
-	SecretKey string `json:"secret_key,omitempty"`
-	Endpoint  string `json:"endpoint,omitempty"`
-	Dir       string `json:"dir,omitempty"`
+	Backend         string `json:"backend"` // s3 | minio | gcs | local
+	Bucket          string `json:"bucket,omitempty"`
+	Region          string `json:"region,omitempty"`
+	CredentialsJSON string `json:"credentials,omitempty"`
+	Project         string `json:"project,omitempty"`
+	AccessKey       string `json:"access_key,omitempty"`
+	SecretKey       string `json:"secret_key,omitempty"`
+	Endpoint        string `json:"endpoint,omitempty"`
+	Dir             string `json:"dir,omitempty"`
 }
 
 //||------------------------------------------------------------------------------------------------||
@@ -93,6 +95,7 @@ type QueueInstanceConfig struct {
 //||------------------------------------------------------------------------------------------------||
 
 type HTTPInstanceConfig struct {
+	URL          string `json:"url"`
 	Backend      string `json:"backend"` // "mux" or "http"
 	Port         int    `json:"port"`
 	Cors         bool   `json:"cors"`

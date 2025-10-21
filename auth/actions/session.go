@@ -8,6 +8,7 @@ import (
 
 	"github.com/ralphferrara/aria/app"
 	"github.com/ralphferrara/aria/auth/db"
+	"github.com/ralphferrara/aria/auth/setup"
 	"github.com/ralphferrara/aria/auth/types"
 	"github.com/ralphferrara/aria/base/random"
 )
@@ -138,49 +139,50 @@ func UpdateSession(sessionToken string, session types.SessionRecord) error {
 }
 
 //||------------------------------------------------------------------------------------------------||
-//|| Create the
+//|| Create and Set Session Cookies
 //||------------------------------------------------------------------------------------------------||
 
 func WriteSessionCookie(w http.ResponseWriter, sessionToken string) {
-	//||------------------------------------------------------------------------------------------------||
-	//|| Set the Cookie
-	//||------------------------------------------------------------------------------------------------||
 
 	if sessionToken == "" {
 		fmt.Println("[Session] No session token provided")
 		return
 	}
 
-	fmt.Println("[Session] Setting cookie with token:", sessionToken)
+	app.Log.Data("[Session] Setting cookie with token:", sessionToken)
 
 	//||------------------------------------------------------------------------------------------------||
-	//|| UI Cookie
+	//|| Helper: Build Cookie
 	//||------------------------------------------------------------------------------------------------||
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session_ui",
-		Value:    "1",
-		Path:     "/",
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   86400 * 30,
-		HttpOnly: false,
-	})
+	buildCookie := func(name, value string, httpOnly bool) *http.Cookie {
+		c := &http.Cookie{
+			Name:     name,
+			Value:    value,
+			Path:     "/",
+			HttpOnly: httpOnly,
+			MaxAge:   86400 * 30, // 30 days
+		}
+
+		if app.Config.App.Env == "production" {
+			// Production: explicit domain + HTTPS
+			c.Domain = setup.Setup.Domain // e.g. "complyage.com"
+			c.Secure = true
+			c.SameSite = http.SameSiteLaxMode
+		} else {
+			// Development: no Domain override → stick to current host:port
+			c.Secure = false
+			c.SameSite = http.SameSiteLaxMode
+		}
+
+		return c
+	}
 
 	//||------------------------------------------------------------------------------------------------||
-	//|| Create and set the cookie
+	//|| Session Cookie (HttpOnly)
 	//||------------------------------------------------------------------------------------------------||
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session",
-		Value:    sessionToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   86400 * 30,
-	})
-
+	http.SetCookie(w, buildCookie("session", sessionToken, true))
 }
 
 //||------------------------------------------------------------------------------------------------||

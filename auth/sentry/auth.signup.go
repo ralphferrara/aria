@@ -36,40 +36,48 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	//||------------------------------------------------------------------------------------------------||
 	//|| Var
 	//||------------------------------------------------------------------------------------------------||
-	email := r.FormValue("email")
+	identifier := r.FormValue("email")
 	accountType := r.FormValue("type")
 	//||------------------------------------------------------------------------------------------------||
 	//|| Validate
 	//||------------------------------------------------------------------------------------------------||
-	if !validate.IsValidEmail(email) {
+
+	if !validate.IsValidEmail(identifier) {
 		responses.Error(w, http.StatusBadRequest, "Invalid email")
 		return
 	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Generate the Values
 	//||------------------------------------------------------------------------------------------------||
+
 	key := random.UUIDString()
 	code := random.NumberString(6)
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Create record
 	//||------------------------------------------------------------------------------------------------||
+
 	record := types.TwoFactorVerification{
 		Code:       code,
 		Key:        key,
-		Identifier: email,
+		Identifier: identifier,
 		Type:       accountType,
 		Attempts:   0,
 		Created:    time.Now(),
 		Expires:    time.Now().Add(15 * time.Minute),
 	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Serialize to Save
 	//||------------------------------------------------------------------------------------------------||
+
 	data, err := json.Marshal(record)
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, "Failed to serialize")
 		return
 	}
+
 	//||------------------------------------------------------------------------------------------------||
 	//|| Save to Redis with expiry
 	//||------------------------------------------------------------------------------------------------||
@@ -79,7 +87,7 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		responses.Error(w, http.StatusInternalServerError, "Failed to cache verification")
 		return
 	}
-	fmt.Printf("✅ TwoFactor %s :: key=%s code=%s\n", accountType, key, code)
+	app.Log.Data(fmt.Sprintf("TwoFactor code=%s\n", code))
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Store

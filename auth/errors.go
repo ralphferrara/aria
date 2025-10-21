@@ -6,15 +6,23 @@ import "github.com/ralphferrara/aria/app"
 //|| Initialize Auth Constants
 //||------------------------------------------------------------------------------------------------||
 
-func InitErrors() {
+func init() {
 	app.Err("Auth").Add("ACCOUNT_ALREADY_CREATED", "Account is already created", false)
+	app.Err("Auth").Add("ACCOUNT_MISMATCH", "Account/Session mismatch", false)
 	app.Err("Auth").Add("ACCOUNT_NOT_PENDING", "Account is already created", false)
+	app.Err("Auth").Add("ACCOUNT_STATUS_PEND", "Account is not setup", false)
+	app.Err("Auth").Add("ACCOUNT_STATUS_VERF", "Account is not completed", false)
+	app.Err("Auth").Add("ACCOUNT_STATUS_SUSP", "Account has been suspended", false)
+	app.Err("Auth").Add("ACCOUNT_STATUS_DELD", "Account has been deleted", false)
+	app.Err("Auth").Add("INSUFFICIENT_ACCOUNT_LEVEL", "You do not have sufficient privileges to access this area", false)
+
 	app.Err("Auth").Add("ACCOUNT_LOOKUP_FAILED", "Could not re-fetch account after update", false)
 	app.Err("Auth").Add("ACCOUNT_DELETE_FAILED", "Failed to delete account", false)
 	app.Err("Auth").Add("ACCOUNT_CREATE_FAILED", "Failed to create account", false)
 	app.Err("Auth").Add("ACCOUNT_NOT_FOUND", "Account Not Found", false)
 	app.Err("Auth").Add("ACCOUNT_TOKEN_MISMATCH", "Token does not match", false)
 	app.Err("Auth").Add("ACCOUNT_ACTIVATE_FAILED", "Could not update account to active status", false)
+	app.Err("Auth").Add("IDENTITY_CREATE_FAILED", "Could not create account identity", false)
 
 	app.Err("Auth").Add("USERNAME_GEN_FAILED", "Failed to generate username", false)
 
@@ -28,7 +36,7 @@ func InitErrors() {
 	app.Err("Auth").Add("MISSING_SESSION_COOKIE", "Missing session cookie", false)
 
 	app.Err("Auth").Add("PRIVPUB_FAILED", "Failed to create an encryption key pair", false)
-	app.Err("Auth").Add("BAD_BIP39", "Invalid BIP39 Keywotd", false)
+	app.Err("Auth").Add("BAD_BIP39", "Invalid BIP39 Keyword", false)
 	app.Err("Auth").Add("BIP39_GEN_FAILED", "Failed to generate BIP39 keyword list", false)
 	app.Err("Auth").Add("PRIVPUB_MISMATCH", "Private/Public Keypair do not match", false)
 	app.Err("Auth").Add("PRIVPUB_CHECKEY_FAILED", "Failed to validate Private/Public Keypair", false)
