@@ -9,11 +9,16 @@ import (
 	"github.com/chai2010/webp"
 )
 
-// encodeWebP uses native WebP encoder (requires libwebp)
-func encodeWebP(img image.Image) (*bytes.Buffer, error) {
+func encodeWebP(img image.Image, lossless bool, quality int) (*bytes.Buffer, error) {
+	if quality < 1 || quality > 100 {
+		quality = 82
+	}
+	opts := &webp.Options{
+		Lossless: lossless,
+		Quality:  float32(quality), // used when Lossless=false
+	}
 	var webpBuf bytes.Buffer
-	err := webp.Encode(&webpBuf, img, &webp.Options{Lossless: true})
-	if err != nil {
+	if err := webp.Encode(&webpBuf, img, opts); err != nil {
 		return nil, err
 	}
 	return &webpBuf, nil
