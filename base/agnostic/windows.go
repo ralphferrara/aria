@@ -12,19 +12,21 @@ import (
 	"strconv"
 )
 
-var cwebpPath = `C:\webp\bin\cwebp.exe` // change if installed elsewhere
+var cwebpPath = `C:\webp\bin\cwebp.exe` // adjust path if needed
 
 func encodeWebP(img image.Image, lossless bool, quality int) (*bytes.Buffer, error) {
 	if quality < 1 || quality > 100 {
 		quality = 82
 	}
+
 	// Encode PNG to feed cwebp stdin
 	var pngBuf bytes.Buffer
 	if err := png.Encode(&pngBuf, img); err != nil {
 		return nil, err
 	}
 
-	args := []string{"-quiet", "--mt", "-", "-o", "-"}
+	// Build args list
+	args := []string{"-quiet", "-", "-o", "-"} // removed "--mt"
 	if lossless {
 		args = append([]string{"-lossless"}, args...)
 	} else {
@@ -36,10 +38,11 @@ func encodeWebP(img image.Image, lossless bool, quality int) (*bytes.Buffer, err
 
 	var webpBuf bytes.Buffer
 	cmd.Stdout = &webpBuf
-	cmd.Stderr = os.Stderr // keep this to see real encoder errors
+	cmd.Stderr = os.Stderr // keep this to show encoder errors
 
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("WebP encoding failed: %w", err)
 	}
+
 	return &webpBuf, nil
 }
