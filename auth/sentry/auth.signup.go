@@ -14,6 +14,7 @@ import (
 
 	"github.com/ralphferrara/aria/app"
 	"github.com/ralphferrara/aria/auth/actions"
+	"github.com/ralphferrara/aria/auth/setup"
 	"github.com/ralphferrara/aria/auth/types"
 	"github.com/ralphferrara/aria/base/random"
 	"github.com/ralphferrara/aria/base/validate"
@@ -88,6 +89,12 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	app.Log.Data(fmt.Sprintf("TwoFactor code=%s\n", code))
+
+	//||------------------------------------------------------------------------------------------------||
+	//|| Send
+	//||------------------------------------------------------------------------------------------------||
+
+	setup.Setup.Functions.OnSendTwoFactorCode(r, 0, identifier, code)
 
 	//||------------------------------------------------------------------------------------------------||
 	//|| Store

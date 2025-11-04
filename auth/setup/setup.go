@@ -36,4 +36,5 @@ type AuthFunctions struct {
 	OnAuthCheck           func(w http.ResponseWriter, r *http.Request, authMe types.AuthMeRecord) error
 	OnBeforeAccountDelete func(accountID int64) error
 	OnAfterAccountDelete  func(accountID int64) error
+	OnSendTwoFactorCode   func(r *http.Request, accountID int64, identifier string, code string) error
 }
